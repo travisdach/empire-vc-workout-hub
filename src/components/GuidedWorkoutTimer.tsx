@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { WorkoutDay } from '../data/workouts';
 
+// HAPTIC HELPERS
+function vibrate(pattern: number | number[]) {
+  if (navigator.vibrate) {
+    navigator.vibrate(pattern);
+  }
+}
+
 type Phase = 'idle' | 'work' | 'rest' | 'complete';
 
 interface GuidedWorkoutTimerProps {
@@ -24,7 +31,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
   const exercises = workout.exercises;
   const currentExercise = exercises[currentExerciseIndex];
 
-  // Preload audio and unlock on first user interaction (for iOS)
+  // Preload audio & unlock for iOS Safari
   useEffect(() => {
     beepRef.current = new Audio('/sounds/beep.wav');
     alarmRef.current = new Audio('/sounds/alarm.wav');
@@ -39,6 +46,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
         a.pause();
         a.currentTime = 0;
       });
+
       document.removeEventListener('click', unlockAudio);
       document.removeEventListener('touchstart', unlockAudio);
     };
@@ -47,7 +55,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
     document.addEventListener('touchstart', unlockAudio, { once: true });
   }, []);
 
-  // Main countdown effect
+  // Main countdown
   useEffect(() => {
     if (!running) return;
     if (phase === 'idle' || phase === 'complete') return;
@@ -60,68 +68,64 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
     return () => clearInterval(id);
   }, [running, phase, remaining]);
 
-  // Handle beeps + transitions
+  // Handle countdown beeps + transitions
   useEffect(() => {
     if (!running) return;
 
-    // Beep at 5,4,3,2,1 in both work and rest
+    // Countdown beeps: 5–4–3–2–1
     if (remaining > 0 && remaining <= 5 && (phase === 'work' || phase === 'rest')) {
       beepRef.current?.play().catch(() => {});
+      vibrate(70);
     }
 
+    // When timer hits zero
     if (remaining !== 0) return;
 
-    // When remaining hits 0, branch by phase
     if (phase === 'work') {
-      // End of an exercise
+      // End of exercise
       alarmRef.current?.play().catch(() => {});
+      vibrate([150, 80, 150]); // strong double tap
 
       const isLastExercise = currentExerciseIndex === exercises.length - 1;
       const isLastSet = currentSet === totalSets - 1;
 
+      // Everything complete
       if (isLastExercise && isLastSet) {
-        // Done ALL sets and ALL exercises
         setRunning(false);
         setPhase('complete');
         completeRef.current?.play().catch(() => {});
+        vibrate([200, 100, 200, 100, 300]); // celebration pattern
         return;
       }
 
-      // Otherwise, go into a rest period before next exercise / next set
+      // Otherwise start REST
       setPhase('rest');
       setRemaining(breakSeconds);
+      vibrate(100); // pulse at rest start
       return;
     }
 
     if (phase === 'rest') {
-      // Rest finished -> "Go!" and move to next exercise or next set
+      // End of rest -> GO!
       goRef.current?.play().catch(() => {});
+      vibrate([120, 40, 120]); // double tap "go" cue
 
       const isLastExercise = currentExerciseIndex === exercises.length - 1;
       const isLastSet = currentSet === totalSets - 1;
 
       if (!isLastExercise) {
-        // Next exercise in same set
+        // Continue inside the same set
         const nextIndex = currentExerciseIndex + 1;
         setCurrentExerciseIndex(nextIndex);
-        const nextDuration = exercises[nextIndex]?.workSeconds ?? 0;
         setPhase('work');
-        setRemaining(nextDuration);
+        setRemaining(exercises[nextIndex].workSeconds);
       } else {
-        // End of set
-        if (!isLastSet) {
-          const nextSet = currentSet + 1;
-          setCurrentSet(nextSet);
-          setCurrentExerciseIndex(0);
-          const firstDuration = exercises[0]?.workSeconds ?? 0;
-          setPhase('work');
-          setRemaining(firstDuration);
-        } else {
-          // Should rarely hit this branch, but safe-guard
-          setRunning(false);
-          setPhase('complete');
-          completeRef.current?.play().catch(() => {});
-        }
+        // End of set, go to next set
+        const nextSet = currentSet + 1;
+        setCurrentSet(nextSet);
+        setCurrentExerciseIndex(0);
+        setPhase('work');
+        setRemaining(exercises[0].workSeconds);
       }
     }
   }, [
@@ -135,6 +139,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
     exercises
   ]);
 
+  // Controls
   function handleStart() {
     if (!exercises.length) return;
     setCurrentSet(0);
@@ -179,6 +184,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
           <div className="text-xs uppercase tracking-[0.25em] text-slate-400 mb-1">
             Guided Timer
           </div>
+
           <div className="text-sm text-slate-300">
             Set{' '}
             <span className="font-semibold text-amber-200">
@@ -189,12 +195,14 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
               {currentExerciseIndex + 1}/{exercises.length}
             </span>
           </div>
+
           {currentExercise && phase !== 'complete' && (
             <div className="text-sm mt-1">
               <span className="text-slate-400">Now:</span>{' '}
               <span className="font-semibold">{currentExercise.name}</span>
             </div>
           )}
+
           {phase === 'complete' && (
             <div className="text-sm mt-1 font-semibold text-emerald-300">
               Workout complete! Great job.
@@ -202,6 +210,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
           )}
         </div>
 
+        {/* Break Selector */}
         <div className="flex items-center gap-3">
           <div className="flex flex-col text-xs">
             <span className="text-slate-400 mb-1">Rest between exercises</span>
@@ -211,14 +220,15 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
               className="rounded-lg bg-slate-950 border border-slate-700 px-2 py-1 text-xs"
               disabled={running && phase !== 'idle'}
             >
-              <option value={10}>10 seconds</option>
-              <option value={20}>20 seconds</option>
-              <option value={30}>30 seconds</option>
+              <option value={10}>10 sec</option>
+              <option value={20}>20 sec</option>
+              <option value={30}>30 sec</option>
             </select>
           </div>
         </div>
       </div>
 
+      {/* Timer */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-col">
           <div className="text-xs text-slate-400 mb-1">{phaseLabel}</div>
@@ -234,6 +244,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
           >
             {phase === 'idle' ? 'Start Workout' : running ? 'Pause' : 'Resume'}
           </button>
+
           <button
             onClick={handleReset}
             className="px-3 py-1.5 rounded-full border border-slate-700 text-xs md:text-sm hover:border-amber-300/70"
@@ -244,9 +255,8 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
       </div>
 
       <p className="text-[11px] text-slate-500">
-        Timer will auto-advance through all exercises and sets. Beeps at 5 seconds, alarm at the
-        end of each exercise, “Go!” at the end of each rest, and cheering when the full workout is
-        complete.
+        Timer runs through all exercises and sets automatically with countdown beeps,
+        alarms, rest transitions, “Go!” cues, and workout completion celebration.
       </p>
     </div>
   );
