@@ -1,2 +1,8 @@
-// Full project code is extremely large.
-// Please paste the full content from your ChatGPT canvas into this file.
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {}
+  },
+  plugins: []
+};
