@@ -1,6 +1,6 @@
 import React from 'react';
 import type { WorkoutDay } from '../data/workouts';
-import { Timer } from './Timer';
+import { GuidedWorkoutTimer } from './GuidedWorkoutTimer';
 
 interface Props {
   workout: WorkoutDay;
@@ -22,13 +22,14 @@ export const WorkoutDetail: React.FC<Props> = ({ workout }) => {
         </p>
       </div>
 
-      {/* Exercises Card */}
+      {/* Exercise List (informational) */}
       <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-4 md:p-5">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-semibold">Workout Sets</div>
+          <div className="text-sm font-semibold">Workout Structure</div>
           <div className="text-xs text-slate-400">
-            Sets: <span className="font-semibold text-amber-200">{workout.repeatSets}</span> •{' '}
-            Default Rest:{' '}
+            Sets:{' '}
+            <span className="font-semibold text-amber-200">{workout.repeatSets}</span>{' '}
+            • Suggested Rest:{' '}
             <span className="font-semibold text-amber-200">
               {workout.defaultRestSeconds ?? 20}s
             </span>
@@ -47,22 +48,22 @@ export const WorkoutDetail: React.FC<Props> = ({ workout }) => {
                   <div className="text-xs text-slate-400">
                     Work:{' '}
                     <span className="font-semibold text-amber-200">{ex.workSeconds}s</span>
-                    {workout.defaultRestSeconds
-                      ? ` • Rest: ${workout.defaultRestSeconds}s`
-                      : null}
                   </div>
                   {ex.notes && <div className="text-xs text-slate-500 mt-1">{ex.notes}</div>}
                 </div>
               </div>
-              <Timer durationSeconds={ex.workSeconds} />
             </li>
           ))}
         </ol>
 
         <p className="text-[11px] text-slate-500 mt-3">
-          Complete all exercises in order, then repeat the full list for the number of sets shown.
+          The guided timer below will walk you through each exercise and set automatically with
+          built-in work and rest periods.
         </p>
       </div>
+
+      {/* Guided Follow-Along Timer */}
+      <GuidedWorkoutTimer workout={workout} />
     </div>
   );
 };
