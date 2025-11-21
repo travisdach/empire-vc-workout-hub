@@ -97,64 +97,67 @@ export default function App() {
       <IOSInstallPrompt />
 
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
-        <div className="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
-          <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Empire Volleyball
-            </div>
-            <div className="text-xl font-semibold flex items-center gap-2">
-              <span style={{ color: BRAND_GOLD }}>Empire VC Workout Hub</span>
-            </div>
-          </div>
+     <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur animate-fade-slide-down">
+  <div className="max-w-4xl mx-auto flex flex-col items-center justify-center px-4 py-4">
+    <div className="flex flex-col items-center">
+      <img
+        src="/icons/empire-crown.png"
+        alt="Empire Crown"
+        className="w-12 h-12 mb-2 animate-pop"
+      />
+      <div className="text-2xl font-semibold text-center" style={{ color: BRAND_GOLD }}>
+        Empire VC Workout Hub
+      </div>
+    </div>
 
-          <nav className="flex gap-2 text-sm">
-            <button
-              onClick={() => setView('today')}
-              className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
-                view === 'today'
-                  ? 'border-amber-300 bg-amber-300/10 text-amber-200'
-                  : 'border-slate-700 hover:border-amber-300/70'
-              }`}
-            >
-              Today
-            </button>
+    <nav className="flex gap-3 text-sm mt-4 animate-fade-in">
+      <button
+        onClick={() => setView('today')}
+        className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
+          view === 'today'
+            ? 'border-amber-300 bg-amber-300/10 text-amber-200'
+            : 'border-slate-700 hover:border-amber-300/70'
+        }`}
+      >
+        Today
+      </button>
 
-            <button
-              onClick={() => setView('upcoming')}
-              className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
-                view === 'upcoming'
-                  ? 'border-amber-300 bg-amber-300/10 text-amber-200'
-                  : 'border-slate-700 hover:border-amber-300/70'
-              }`}
-            >
-              Upcoming
-            </button>
+      <button
+        onClick={() => setView('upcoming')}
+        className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
+          view === 'upcoming'
+            ? 'border-amber-300 bg-amber-300/10 text-amber-200'
+            : 'border-slate-700 hover:border-amber-300/70'
+        }`}
+      >
+        Upcoming
+      </button>
 
-            <button
-              onClick={() => setView('calendar')}
-              className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
-                view === 'calendar'
-                  ? 'border-amber-300 bg-amber-300/10 text-amber-200'
-                  : 'border-slate-700 hover:border-amber-300/70'
-              }`}
-            >
-              Calendar
-            </button>
+      <button
+        onClick={() => setView('calendar')}
+        className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
+          view === 'calendar'
+            ? 'border-amber-300 bg-amber-300/10 text-amber-200'
+            : 'border-slate-700 hover:border-amber-300/70'
+        }`}
+      >
+        Calendar
+      </button>
 
-            <button
-              onClick={() => setView('coach')}
-              className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
-                view === 'coach'
-                  ? 'border-amber-300 bg-amber-300/10 text-amber-200'
-                  : 'border-slate-700 hover:border-amber-300/70'
-              }`}
-            >
-              Coach
-            </button>
-          </nav>
-        </div>
-      </header>
+      <button
+        onClick={() => setView('coach')}
+        className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
+          view === 'coach'
+            ? 'border-amber-300 bg-amber-300/10 text-amber-200'
+            : 'border-slate-700 hover:border-amber-300/70'
+        }`}
+      >
+        Coach
+      </button>
+    </nav>
+  </div>
+</header>
+
 
       {/* Main Content */}
       <main className="flex-1">
