@@ -1,5 +1,7 @@
+// src/components/GuidedWorkoutTimer.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import type { WorkoutDay } from '../data/workouts';
+import { getExerciseImage } from '../data/exerciseImages';
 
 // HAPTIC HELPERS
 function vibrate(pattern: number | number[]) {
@@ -21,6 +23,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [remaining, setRemaining] = useState(0);
   const [breakSeconds, setBreakSeconds] = useState<10 | 20 | 30>(20);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const beepRef = useRef<HTMLAudioElement | null>(null);
   const alarmRef = useRef<HTMLAudioElement | null>(null);
@@ -30,6 +33,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
   const totalSets = workout.repeatSets;
   const exercises = workout.exercises;
   const currentExercise = exercises[currentExerciseIndex];
+  const currentImage = getExerciseImage(currentExercise?.name ?? '');
 
   // Preload audio & unlock for iOS Safari
   useEffect(() => {
@@ -147,6 +151,7 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
     setPhase('work');
     setRemaining(exercises[0].workSeconds);
     setRunning(true);
+    setFullscreen(true); // enter full screen when workout starts
   }
 
   function handlePauseResume() {
@@ -165,6 +170,11 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
     setRemaining(0);
   }
 
+  function handleExitFullscreen() {
+    setFullscreen(false);
+    setRunning(false); // pause when exiting
+  }
+
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
 
@@ -178,86 +188,158 @@ export const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout 
       : 'Complete';
 
   return (
-    <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-900/80 p-4 md:p-5 space-y-3">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.25em] text-slate-400 mb-1">
-            Guided Timer
+    <>
+      {/* Normal card view in the workout detail screen */}
+      <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-900/80 p-4 md:p-5 space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-[0.25em] text-slate-400 mb-1">
+              Guided Timer
+            </div>
+
+            <div className="text-sm text-slate-300">
+              Set{' '}
+              <span className="font-semibold text-amber-200">
+                {currentSet + 1}/{totalSets}
+              </span>{' '}
+              • Exercise{' '}
+              <span className="font-semibold text-amber-200">
+                {currentExerciseIndex + 1}/{exercises.length}
+              </span>
+            </div>
+
+            {currentExercise && phase !== 'complete' && (
+              <div className="text-sm mt-1">
+                <span className="text-slate-400">Now:</span>{' '}
+                <span className="font-semibold">{currentExercise.name}</span>
+              </div>
+            )}
+
+            {phase === 'complete' && (
+              <div className="text-sm mt-1 font-semibold text-emerald-300">
+                Workout complete! Great job.
+              </div>
+            )}
           </div>
 
-          <div className="text-sm text-slate-300">
-            Set{' '}
-            <span className="font-semibold text-amber-200">
-              {currentSet + 1}/{totalSets}
-            </span>{' '}
-            • Exercise{' '}
-            <span className="font-semibold text-amber-200">
-              {currentExerciseIndex + 1}/{exercises.length}
-            </span>
+          {/* Break Selector */}
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col text-xs">
+              <span className="text-slate-400 mb-1">Rest between exercises</span>
+              <select
+                value={breakSeconds}
+                onChange={(e) => setBreakSeconds(Number(e.target.value) as 10 | 20 | 30)}
+                className="rounded-lg bg-slate-950 border border-slate-700 px-2 py-1 text-xs"
+                disabled={running && phase !== 'idle'}
+              >
+                <option value={10}>10 sec</option>
+                <option value={20}>20 sec</option>
+                <option value={30}>30 sec</option>
+              </select>
+            </div>
           </div>
-
-          {currentExercise && phase !== 'complete' && (
-            <div className="text-sm mt-1">
-              <span className="text-slate-400">Now:</span>{' '}
-              <span className="font-semibold">{currentExercise.name}</span>
-            </div>
-          )}
-
-          {phase === 'complete' && (
-            <div className="text-sm mt-1 font-semibold text-emerald-300">
-              Workout complete! Great job.
-            </div>
-          )}
         </div>
 
-        {/* Break Selector */}
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col text-xs">
-            <span className="text-slate-400 mb-1">Rest between exercises</span>
-            <select
-              value={breakSeconds}
-              onChange={(e) => setBreakSeconds(Number(e.target.value) as 10 | 20 | 30)}
-              className="rounded-lg bg-slate-950 border border-slate-700 px-2 py-1 text-xs"
-              disabled={running && phase !== 'idle'}
+        {/* Compact timer + start button in card */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col">
+            <div className="text-xs text-slate-400 mb-1">{phaseLabel}</div>
+            <div className="text-2xl md:text-3xl font-mono">
+              {mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleStart}
+              className="px-3 py-1.5 rounded-full border border-amber-300 text-xs md:text-sm hover:bg-amber-300/10"
             >
-              <option value={10}>10 sec</option>
-              <option value={20}>20 sec</option>
-              <option value={30}>30 sec</option>
-            </select>
-          </div>
-        </div>
-      </div>
+              Start Workout
+            </button>
 
-      {/* Timer */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col">
-          <div className="text-xs text-slate-400 mb-1">{phaseLabel}</div>
-          <div className="text-3xl md:text-4xl font-mono">
-            {mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}
+            <button
+              onClick={handleReset}
+              className="px-3 py-1.5 rounded-full border border-slate-700 text-xs md:text-sm hover:border-amber-300/70"
+            >
+              Reset
+            </button>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={handlePauseResume}
-            className="px-3 py-1.5 rounded-full border border-amber-300 text-xs md:text-sm hover:bg-amber-300/10"
-          >
-            {phase === 'idle' ? 'Start Workout' : running ? 'Pause' : 'Resume'}
-          </button>
-
-          <button
-            onClick={handleReset}
-            className="px-3 py-1.5 rounded-full border border-slate-700 text-xs md:text-sm hover:border-amber-300/70"
-          >
-            Reset
-          </button>
-        </div>
+        <p className="text-[11px] text-slate-500">
+          Tap “Start Workout” to enter full-screen guided mode with sounds, haptics, and
+          automatic exercise + set transitions.
+        </p>
       </div>
 
-      <p className="text-[11px] text-slate-500">
-        Timer runs through all exercises and sets automatically with countdown beeps,
-        alarms, rest transitions, “Go!” cues, and workout completion celebration.
-      </p>
-    </div>
+      {/* Full-screen overlay mode */}
+      {fullscreen && (
+        <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col">
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
+            <div>
+              <div className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                Set {currentSet + 1} / {totalSets}
+              </div>
+              <div className="text-sm">
+                Exercise {currentExerciseIndex + 1} / {exercises.length}
+              </div>
+            </div>
+            <button
+              onClick={handleExitFullscreen}
+              className="px-3 py-1 rounded-full border border-slate-600 text-xs hover:border-amber-300/80"
+            >
+              Exit
+            </button>
+          </div>
+
+          {/* Main content */}
+          <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 gap-4">
+            {/* Exercise image */}
+            <div className="w-full max-w-md aspect-[4/3] rounded-3xl overflow-hidden border border-slate-700 bg-slate-900">
+              <img
+                src={currentImage}
+                alt={currentExercise?.name ?? 'Exercise'}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Text + timer */}
+            <div className="text-center space-y-2">
+              <div className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                {phaseLabel}
+              </div>
+              {currentExercise && phase !== 'complete' && (
+                <div className="text-lg font-semibold">{currentExercise.name}</div>
+              )}
+              {phase === 'complete' && (
+                <div className="text-lg font-semibold text-emerald-300">
+                  Workout complete! Great job.
+                </div>
+              )}
+              <div className="text-5xl md:text-6xl font-mono mt-1">
+                {mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={handlePauseResume}
+                className="px-6 py-2 rounded-full border border-amber-300 text-sm font-semibold hover:bg-amber-300/10"
+              >
+                {phase === 'idle' ? 'Start' : running ? 'Pause' : 'Resume'}
+              </button>
+              <button
+                onClick={handleReset}
+                className="px-6 py-2 rounded-full border border-slate-600 text-sm hover:border-amber-300/70"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
