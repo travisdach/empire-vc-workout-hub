@@ -358,19 +358,24 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       {/* GO FLASH (for phase transitions) */}
       {fullscreen && flashGo && <div className="go-flash" />}
 
-      {/* START SCREEN */}
+            {/* START SCREEN (button pinned to bottom) */}
       {!fullscreen && (
-        <div className="flex flex-col items-center justify-center py-10 text-white gap-4">
-          <div className="text-xl font-bold">Empire VC Workout Hub</div>
+        <>
+          <div className="mt-3 text-center text-sm text-slate-300">
+            Guided timer available for this workout.
+          </div>
 
-          <button
-            onClick={handleStart}
-            className="px-6 py-3 bg-amber-400 text-slate-900 rounded-xl font-bold shadow hover:bg-amber-300"
-          >
-            Start Workout
-          </button>
-        </div>
+          <div className="fixed bottom-4 left-0 right-0 flex justify-center z-40 pointer-events-none">
+            <button
+              onClick={handleStart}
+              className="px-6 py-3 bg-amber-400 text-slate-900 rounded-xl font-bold shadow hover:bg-amber-300 pointer-events-auto rounded-2xl"
+            >
+              Start Workout
+            </button>
+          </div>
+        </>
       )}
+
 
       {/* FULLSCREEN MODE */}
       {fullscreen && (
