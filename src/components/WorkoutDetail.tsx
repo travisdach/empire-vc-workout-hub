@@ -61,9 +61,6 @@ export const WorkoutDetail: React.FC<Props> = ({ workout }) => {
           built-in work and rest periods.
         </p>
       </div>
-
-      {/* Guided Follow-Along Timer */}
-      <GuidedWorkoutTimer workout={workout} />
     </div>
   );
 };
