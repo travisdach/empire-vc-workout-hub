@@ -421,4 +421,4 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   );
 };
 
-export default { GuidedWorkoutTimer };
+export default GuidedWorkoutTimer;
