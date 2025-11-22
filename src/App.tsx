@@ -1,4 +1,4 @@
-// FULL UPDATED App.tsx WITH CINEMATIC SPLASH, PARALLAX & INTRO CHIME
+// FULL UPDATED App.tsx — Parallax Removed
 // =================================================================
 // Copy/paste into src/App.tsx
 
@@ -18,93 +18,71 @@ import BRAND_GOLD_IMG from '/icons/empire-crown.png';
 import GuidedWorkoutTimer from './components/GuidedWorkoutTimer';
 
 // ===============================
-// CINEMATIC SPLASH SCREEN
+// CINEMATIC SPLASH SCREEN (NO PARALLAX)
 // ===============================
 function SplashScreen({ onDone }: { onDone: () => void }) {
-  // Spotify-safe intro chime using Web Audio (mixes with background music)
+  // Spotify-safe intro chime
   function playIntroChime() {
     try {
       const AudioCtx =
         (window as any).AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
 
-      const audioCtx = new AudioCtx();
-
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.value = 660; // bright "gold" tone
+      osc.frequency.value = 660;
 
-      const now = audioCtx.currentTime;
+      const now = ctx.currentTime;
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.exponentialRampToValueAtTime(0.15, now + 0.08);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
 
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(ctx.destination);
 
       osc.start();
       osc.stop(now + 0.8);
-    } catch {
-      // fail silently if audio context isn't available
-    }
+    } catch {}
   }
 
   useEffect(() => {
     playIntroChime();
-    const id = setTimeout(() => onDone(), 1900); // ~1.9s cinematic intro
+    const id = setTimeout(() => onDone(), 1900);
     return () => clearTimeout(id);
   }, [onDone]);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950 overflow-hidden flex items-center justify-center">
-      {/* BACKGROUND FX CONTAINER (iOS-safe) */}
+
+      {/* BACKGROUND FX — BURST ONLY (No Parallax) */}
       <div className="cinematic-container">
-        {/* PARALLAX FLOATING CROWNS (behind everything) */}
-        <div className="parallax-wrap">
-          <div className="parallax-layer parallax-slow" />
-          <div className="parallax-layer parallax-mid" />
-          <div className="parallax-layer parallax-fast" />
-        </div>
-
-        {/* GOLD BURST USING PNG (prevents iOS gradient distortion) */}
         <div className="gold-burst" />
-
-        {/* GOLD PARTICLES */}
         <div className="particle-layer" />
       </div>
 
-      {/* FOREGROUND CONTENT */}
+      {/* FOREGROUND */}
       <div className="flex flex-col items-center justify-center relative z-[10]">
-        {/* BIG CROWN — zoom + glow */}
+
         <img
           src="/icons/empire-crown.png"
-          alt="Empire VC"
-          className="
-            w-44 h-44 object-contain
-            animate-crown-zoom
-            cinematic-crown-glow
-          "
+          alt="Empire"
+          className="w-44 h-44 object-contain animate-crown-zoom cinematic-crown-glow"
         />
 
-        {/* EMPIRE VOLLEYBALL (Belleza) */}
+        {/* EMPIRE VOLLEYBALL */}
         <div
-          className="
-            mt-3 text-white text-3xl tracking-[0.20em]
-            animate-title-rise
-          "
+          className="mt-3 text-white text-3xl tracking-[0.20em] animate-title-rise"
           style={{ fontFamily: 'Belleza, sans-serif' }}
         >
           EMPIRE VOLLEYBALL
         </div>
 
-        {/* WORKOUT HUB — gold shimmer */}
+        {/* WORKOUT HUB */}
         <div
-          className="
-            mt-1 text-sm tracking-[0.30em] text-amber-300
-            gold-shimmer animate-title-rise-delay
-          "
+          className="mt-1 text-sm tracking-[0.30em] text-amber-300 gold-shimmer animate-title-rise-delay"
         >
           WORKOUT HUB
         </div>
@@ -142,29 +120,26 @@ type ViewMode = 'today' | 'upcoming' | 'calendar' | 'coach';
 
 export default function App() {
   const [view, setView] = useState<ViewMode>('today');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [showSplash, setShowSplash] = useState(true);
 
   const todayWorkout = useMemo(() => getWorkoutForDate(selectedDate), [selectedDate]);
 
   const upcoming = useMemo(() => {
-    const list: { date: Date; workout: WorkoutDay | null }[] = [];
+    const arr: { date: Date; workout: WorkoutDay | null }[] = [];
     const base = new Date();
-
     for (let i = 0; i < 10; i++) {
       const d = new Date(base);
       d.setDate(base.getDate() + i);
-      list.push({ date: d, workout: getWorkoutForDate(d) });
+      arr.push({ date: d, workout: getWorkoutForDate(d) });
     }
-    return list;
+    return arr;
   }, []);
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col relative">
-      {/* SPLASH OVERLAY */}
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
 
-      {/* CONTENT (FADE IN AFTER SPLASH) */}
       <div
         className={`transition-opacity duration-500 ${
           showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
@@ -177,7 +152,7 @@ export default function App() {
               <img
                 src={BRAND_GOLD_IMG}
                 alt="Empire Crown"
-                className="w-12 h-12 mb-2 animate-pop animate-crown-glow"
+                className="w-12 h-12 mb-2.animate-pop animate-crown-glow"
               />
               <div className="text-2xl font-semibold text-center" style={{ color: '#DEC55B' }}>
                 Empire VC Workout Hub
@@ -185,54 +160,24 @@ export default function App() {
             </div>
 
             <nav className="flex gap-3 text-sm mt-4 animate-fade-in">
-              <button
-                onClick={() => setView('today')}
-                className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
-                  view === 'today'
-                    ? 'border-amber-300 bg-amber-300/10 text-amber-200'
-                    : 'border-slate-700 hover:border-amber-300/70'
-                }`}
-              >
-                Today
-              </button>
-
-              <button
-                onClick={() => setView('upcoming')}
-                className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
-                  view === 'upcoming'
-                    ? 'border-amber-300 bg-amber-300/10 text-amber-200'
-                    : 'border-slate-700 hover:border-amber-300/70'
-                }`}
-              >
-                Upcoming
-              </button>
-
-              <button
-                onClick={() => setView('calendar')}
-                className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
-                  view === 'calendar'
-                    ? 'border-amber-300 bg-amber-300/10 text-amber-200'
-                    : 'border-slate-700 hover:border-amber-300/70'
-                }`}
-              >
-                Calendar
-              </button>
-
-              <button
-                onClick={() => setView('coach')}
-                className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
-                  view === 'coach'
-                    ? 'border-amber-300 bg-amber-300/10 text-amber-200'
-                    : 'border-slate-700 hover:border-amber-300/70'
-                }`}
-              >
-                Coach
-              </button>
+              {(['today', 'upcoming', 'calendar', 'coach'] as ViewMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setView(mode)}
+                  className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
+                    view === mode
+                      ? 'border-amber-300 bg-amber-300/10 text-amber-200'
+                      : 'border-slate-700 hover:border-amber-300/70'
+                  }`}
+                >
+                  {mode[0].toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
             </nav>
           </div>
         </header>
 
-        {/* MAIN CONTENT */}
+        {/* MAIN */}
         <main className="flex-1">
           <div className="max-w-4xl mx-auto px-4 py-4 md:py-6">
             {view === 'today' && (
@@ -252,10 +197,7 @@ export default function App() {
                   </>
                 ) : (
                   <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-4 text-sm">
-                    <p className="font-medium mb-1">No assigned home workout today.</p>
-                    <p className="text-slate-400">
-                      This might be a rest day or outside the Dec–May program.
-                    </p>
+                    No assigned home workout today.
                   </div>
                 )}
               </section>
@@ -271,7 +213,8 @@ export default function App() {
                       setSelectedDate(date);
                       setView('today');
                     }}
-                    className="w-full text-left rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 flex justify-between items-center hover:border-amber-300/70 transition"
+                    className="w-full text-left rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 
+                    flex justify-between items-center hover:border-amber-300/70 transition"
                   >
                     <div>
                       <div className="text-sm font-medium">
@@ -285,8 +228,10 @@ export default function App() {
                         {workout ? `${workout.title} — ${workout.focus}` : 'Rest / no workout'}
                       </div>
                     </div>
+
                     {workout && (
-                      <span className="text-[10px] uppercase tracking-wide px-2 py-1 rounded-full border border-amber-300/70 text-amber-200">
+                      <span className="text-[10px] uppercase tracking-wide px-2 py-1 rounded-full 
+                      border border-amber-300/70 text-amber-200">
                         Workout
                       </span>
                     )}
@@ -296,22 +241,16 @@ export default function App() {
             )}
 
             {view === 'calendar' && (
-              <section>
-                <CalendarView
-                  onSelectDate={(d) => {
-                    setSelectedDate(d);
-                    setView('today');
-                  }}
-                  getWorkoutForDate={getWorkoutForDate}
-                />
-              </section>
+              <CalendarView
+                onSelectDate={(d) => {
+                  setSelectedDate(d);
+                  setView('today');
+                }}
+                getWorkoutForDate={getWorkoutForDate}
+              />
             )}
 
-            {view === 'coach' && (
-              <section>
-                <CoachDashboard />
-              </section>
-            )}
+            {view === 'coach' && <CoachDashboard />}
           </div>
         </main>
       </div>
