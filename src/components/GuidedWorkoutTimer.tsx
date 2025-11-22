@@ -324,11 +324,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
             <div className="w-full max-w-md aspect-[4/3] rounded-3xl overflow-hidden border border-slate-700 bg-slate-900">
               {imgSrc ? (
                 <img
-  src={imgSrc}
-  alt={currentExerciseName || 'Exercise'}
-  className="w-full h-full object-contain p-4"
-  style={{ objectPosition: 'center top' }}
-/>
+                  src={imgSrc}
+                  alt={currentExerciseName || 'Exercise'}
+                  className="w-full h-full object-contain p-4"
+                  style={{ objectPosition: 'center top' }}
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">
                   No image set
