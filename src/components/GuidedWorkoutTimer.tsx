@@ -19,7 +19,41 @@ function vibrate(pattern: number | number[]) {
 }
 
 // ======================
-// SPEECH helper
+// COACH PHRASES
+// ======================
+const coachPhrases = {
+  go: [
+    "Go! Push it!",
+    "Go! Stay strong!",
+    "Let's go! Give me your best!",
+    "Move it! You're doing great!",
+    "Go! Keep that energy up!"
+  ],
+  next: [
+    "Next up: {x}. You've got this.",
+    "Coming up: {x}. Stay with me.",
+    "Get ready for {x}. Deep breath.",
+    "Next exercise: {x}. Let's crush it.",
+    "Prepare for {x}. Keep pushing."
+  ],
+  rest: [
+    "Rest. Breathe.",
+    "Rest time. Shake it out.",
+    "Rest. You're doing awesome.",
+    "Catch your breath.",
+    "Rest up. You're doing great!"
+  ],
+  complete: [
+    "Amazing work! Workout complete!",
+    "Great job! That’s a wrap!",
+    "You crushed it! Workout finished!",
+    "Done! Awesome effort today!",
+    "Workout complete. You should be proud!"
+  ]
+};
+
+// ======================
+// SPEECH helper (Natural cadence)
 // ======================
 function baseSpeak(text: string) {
   if (typeof window === "undefined") return;
@@ -28,19 +62,45 @@ function baseSpeak(text: string) {
   const voices = window.speechSynthesis.getVoices();
 
   const preferred = voices.find((v) =>
-    /female|woman|zira|samantha|google uk english female|english/i.test(
-      v.name + " " + v.voiceURI
-    )
+    /(samantha|google us english|google uk english female|olivia|allison|serena|karen|female|woman)/i
+      .test(v.name + " " + v.voiceURI)
   );
 
   if (preferred) utter.voice = preferred;
-  utter.pitch = 1.03;
-  utter.rate = 0.94;
+
+  // Natural talk
+  utter.pitch = 1.07;
+  utter.rate = 0.92;
   utter.volume = 1;
+
+  // Add natural pauses
+  utter.text = text.replace(/,/g, ", ").replace(/\./g, ". ");
 
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utter);
 }
+
+// ======================
+// SAY helper using phrase variations
+// ======================
+const sayPhrase = (
+  phraseKey: string,
+  arg?: string,
+  enabled?: boolean
+) => {
+  if (!enabled) return;
+
+  let phrase = phraseKey;
+
+  if (coachPhrases[phraseKey as keyof typeof coachPhrases]) {
+    const list = coachPhrases[phraseKey as keyof typeof coachPhrases];
+    phrase = list[Math.floor(Math.random() * list.length)];
+  }
+
+  if (arg) phrase = phrase.replace("{x}", arg);
+
+  baseSpeak(phrase);
+};
 
 const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   // ======================
@@ -70,7 +130,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // AUDIO: only beep + complete remain
+  // AUDIO (clean beeps only)
   const beepRef = useRef<HTMLAudioElement | null>(null);
   const completeRef = useRef<HTMLAudioElement | null>(null);
 
@@ -86,9 +146,8 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       : EXERCISE_IMAGES[currentExerciseName] ??
         "/images/exercises/default.png";
 
-  const say = (text: string) => {
-    if (voiceEnabled) baseSpeak(text);
-  };
+  const say = (key: string, arg?: string) =>
+    sayPhrase(key, arg, voiceEnabled);
 
   // ======================
   // PRELOAD AUDIO
@@ -98,7 +157,8 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     completeRef.current = new Audio("/sounds/complete.wav");
 
     const unlock = () => {
-      [beepRef.current, completeRef.current].forEach((a) => {
+      const arr = [beepRef.current, completeRef.current];
+      arr.forEach((a) => {
         if (!a) return;
         a.play().catch(() => {});
         a.pause();
@@ -134,9 +194,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   useEffect(() => {
     if (!running) return;
 
-    // -------------------------
-    // FIX: Phase-transition countdown (visual only — NO BEEPS)
-    // -------------------------
+    // ---- VISUAL ONLY countdown for phase transitions ----
     if (!preStart && remaining > 0 && remaining <= 3) {
       vibrate(50);
 
@@ -154,7 +212,6 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       const lastExercise = currentExerciseIndex === exercises.length - 1;
       const lastSet = currentSet === totalSets - 1;
 
-      // Workout finished
       if (lastExercise && lastSet) {
         setRunning(false);
         setPhase("complete");
@@ -166,24 +223,21 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
         }
 
         vibrate([200, 100, 200, 100, 300]);
-        say("Workout complete!");
+        say("complete");
 
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 2000);
         return;
       }
 
-      // Go to REST
+      // Enter rest
       vibrate([150, 80, 150]);
 
       const nextName =
         lastExercise ? exercises[0].name : exercises[currentExerciseIndex + 1].name;
 
-      if (lastExercise) {
-        say("Next set coming up!");
-      } else {
-        say(`Next: ${nextName}`);
-      }
+      if (lastExercise) say("rest");
+      else say("next", nextName);
 
       setPhase("rest");
       setPhaseTotal(breakSeconds);
@@ -219,7 +273,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       setRemaining(nextDur);
       setFadeKey((k) => k + 1);
 
-      say("Go!");
+      say("go");
       return;
     }
   }, [
@@ -251,14 +305,14 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setRunning(false);
     setPreStart(true);
 
-    say("Get ready");
+    say("next", exercises[0].name);
 
     let t = 0;
     const step = 1000;
 
     const doBeep = () => {
       if (!beepsEnabled || !beepRef.current) return;
-      const clone = beepRef.current.cloneNode(true) as HTMLAudioElement; // FIX glitch
+      const clone = beepRef.current.cloneNode(true) as HTMLAudioElement;
       clone.play().catch(() => {});
       vibrate(50);
     };
@@ -286,7 +340,8 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       setCountdownNumber(null);
       setPreStart(false);
 
-      say("Go!");
+      say("go");
+
       vibrate([100, 40, 100]);
 
       setPhase("work");
@@ -298,7 +353,6 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   // CONTROLS
   // ======================
   const handlePause = () => setRunning((r) => !r);
-
   const handleExit = () => {
     setFullscreen(false);
     setRunning(false);
@@ -326,6 +380,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   // ======================
   return (
     <>
+      {/* FLASH GO */}
       {fullscreen && flashGo && <div className="go-flash" />}
 
       {/* START SCREEN */}
@@ -380,7 +435,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
               />
             </div>
 
-            {/* SETTINGS PANEL */}
+            {/* SETTINGS */}
             {showSettings && (
               <div className="mt-3 flex gap-4 text-xs text-slate-200">
                 <label className="flex items-center gap-2">
@@ -421,73 +476,5 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
             {/* TITLE */}
             <div className="text-3xl font-bold text-center">
-              {phase === "complete" ? "Workout Complete!" : currentExerciseName}
-            </div>
+              {phase === "complete" ? "Workout Complete!" : currentExercise
 
-            {/* TIMER RING */}
-            <div className="relative w-44 h-44 md:w-52 md:h-52 flex items-center justify-center mt-2 mb-2">
-              {!preStart && (
-                <div
-                  className={`relative w-full h-full ${
-                    pulseRing ? "timer-pulse" : ""
-                  }`}
-                >
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r={radius}
-                      stroke="rgba(148,163,184,0.35)"
-                      strokeWidth="10"
-                      fill="none"
-                    />
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r={radius}
-                      stroke="#DEC55B"
-                      strokeWidth="10"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={strokeDashoffset}
-                      style={{ transition: "stroke-dashoffset 0.35s linear" }}
-                    />
-                  </svg>
-                </div>
-              )}
-
-              {/* Countdown number */}
-              {countdownNumber !== null && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-7xl font-extrabold text-amber-400">
-                    {countdownNumber}
-                  </div>
-                </div>
-              )}
-
-              {/* Timer number */}
-              {countdownNumber === null && !preStart && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-5xl font-mono">{remaining}</div>
-                </div>
-              )}
-            </div>
-
-            {/* CONTROLS */}
-            <div className="mt-2 mb-6">
-              <button
-                onClick={handlePause}
-                className="px-10 py-3 rounded-full border border-amber-300 text-base font-semibold hover:bg-amber-300/10"
-              >
-                {running ? "Pause" : "Resume"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-};
-
-export default GuidedWorkoutTimer;
