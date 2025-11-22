@@ -19,7 +19,7 @@ body {
 
 @layer utilities {
   .animate-fade-slide-down {
-    animation: fade-slide-down 0.6s ease-out both;
+    animation: fade-slide-down 0.6s.ease-out both;
   }
 
   .animate-pop {
@@ -112,12 +112,25 @@ body {
 /*   CINEMATIC INTRO EFFECTS   */
 /* =========================== */
 
-/* Radial gold burst */
-.cinematic-burst {
-  z-index: 2;
-  background: radial-gradient(circle, rgba(222,197,91,0.22) 0%, rgba(0,0,0,0) 65%);
+/* iPhone-safe container for background FX */
+.cinematic-container {
+  position: absolute;
+  inset: 0;
+  contain: layout paint;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Gold burst (PNG-based) */
+.gold-burst {
+  position: absolute;
+  inset: 0;
+  background-image: url('/splash/gold-burst.png');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.5;
   animation: burst-fade 1.3s ease-out forwards;
-  opacity: 0;
+  z-index: 2;
 }
 @keyframes burst-fade {
   0% {
@@ -136,6 +149,8 @@ body {
 
 /* Gold particles floating upward */
 .particle-layer {
+  position: absolute;
+  inset: 0;
   z-index: 3;
 }
 .particle-layer::before,
@@ -167,7 +182,7 @@ body {
 
 /* Crown glow pulse (cinematic) */
 .cinematic-crown-glow {
-  animation: crown-pulse 2.2s.ease-in-out infinite;
+  animation: crown-pulse 2.2s ease-in-out infinite;
 }
 @keyframes crown-pulse {
   0% { filter: drop-shadow(0 0 0 rgba(222,197,91,0)); }
@@ -181,7 +196,7 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 .animate-title-rise {
-  animation: title-rise 0.8s ease-out 0.4s forwards;
+  animation: title-rise 0.8s.ease-out 0.4s forwards;
 }
 .animate-title-rise-delay {
   animation: title-rise 0.8s ease-out 0.6s forwards;
@@ -229,7 +244,7 @@ body {
   position: absolute;
   width: 180px;
   height: 180px;
-  opacity: 0.05;
+  opacity: 0.06;
   background-image: url('/icons/empire-crown.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -241,6 +256,7 @@ body {
   top: 10%;
   left: 15%;
   --pz-scale: 0.65;
+  animation-duration: 22s;
 }
 
 /* Medium mid-depth */
@@ -248,13 +264,15 @@ body {
   top: 40%;
   left: 70%;
   --pz-scale: 0.85;
+  animation-duration: 16s;
 }
 
-/* Fast foreground-ish */
+/* Faster front-ish layer */
 .parallax-fast {
   top: 70%;
   left: 8%;
   --pz-scale: 1.1;
+  animation-duration: 11s;
 }
 
 @keyframes parallax-float {
