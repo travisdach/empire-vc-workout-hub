@@ -1,6 +1,5 @@
-// FULL UPDATED App.tsx — Parallax Removed
-// =================================================================
-// Copy/paste into src/App.tsx
+// FINAL App.tsx — Parallax Removed, Particles Removed, Soft/Fast Burst
+// ===================================================================
 
 import React, { useMemo, useState, useEffect } from 'react';
 import {
@@ -18,7 +17,7 @@ import BRAND_GOLD_IMG from '/icons/empire-crown.png';
 import GuidedWorkoutTimer from './components/GuidedWorkoutTimer';
 
 // ===============================
-// CINEMATIC SPLASH SCREEN (NO PARALLAX)
+// SPLASH SCREEN (NO PARALLAX, NO PARTICLES)
 // ===============================
 function SplashScreen({ onDone }: { onDone: () => void }) {
   // Spotify-safe intro chime
@@ -37,42 +36,39 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 
       const now = ctx.currentTime;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.15, now + 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start();
-      osc.stop(now + 0.8);
+      osc.stop(now + 0.5);
     } catch {}
   }
 
   useEffect(() => {
     playIntroChime();
-    const id = setTimeout(() => onDone(), 1900);
+    const id = setTimeout(() => onDone(), 1600);
     return () => clearTimeout(id);
   }, [onDone]);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950 overflow-hidden flex items-center justify-center">
 
-      {/* BACKGROUND FX — BURST ONLY (No Parallax) */}
+      {/* BACKGROUND — Softened Burst Only */}
       <div className="cinematic-container">
-        <div className="gold-burst" />
-        <div className="particle-layer" />
+        <div className="gold-burst-soft" />
       </div>
 
       {/* FOREGROUND */}
       <div className="flex flex-col items-center justify-center relative z-[10]">
-
         <img
           src="/icons/empire-crown.png"
-          alt="Empire"
+          alt="Empire VC"
           className="w-44 h-44 object-contain animate-crown-zoom cinematic-crown-glow"
         />
 
-        {/* EMPIRE VOLLEYBALL */}
         <div
           className="mt-3 text-white text-3xl tracking-[0.20em] animate-title-rise"
           style={{ fontFamily: 'Belleza, sans-serif' }}
@@ -80,7 +76,6 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
           EMPIRE VOLLEYBALL
         </div>
 
-        {/* WORKOUT HUB */}
         <div
           className="mt-1 text-sm tracking-[0.30em] text-amber-300 gold-shimmer animate-title-rise-delay"
         >
@@ -92,14 +87,14 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 }
 
 // ===============================
-// WORKOUT DATE LOGIC
+// DATE LOGIC
 // ===============================
 function getWorkoutForDate(d: Date): WorkoutDay | null {
   const override = findOverrideForDate(d);
   if (override) {
     if (override.type === 'rest') return null;
-    if (override.type === 'template' && override.monthKey && override.dayKey) {
-      return WORKOUT_PROGRAM[override.monthKey][override.dayKey] ?? null;
+    if (override.type === 'template') {
+      return WORKOUT_PROGRAM[override.monthKey!][override.dayKey!] ?? null;
     }
   }
 
@@ -152,7 +147,7 @@ export default function App() {
               <img
                 src={BRAND_GOLD_IMG}
                 alt="Empire Crown"
-                className="w-12 h-12 mb-2.animate-pop animate-crown-glow"
+                className="w-12 h-12 mb-2 animate-pop animate-crown-glow"
               />
               <div className="text-2xl font-semibold text-center" style={{ color: '#DEC55B' }}>
                 Empire VC Workout Hub
@@ -177,7 +172,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* MAIN */}
+        {/* MAIN CONTENT */}
         <main className="flex-1">
           <div className="max-w-4xl mx-auto px-4 py-4 md:py-6">
             {view === 'today' && (
