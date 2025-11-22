@@ -74,12 +74,13 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 
         {/* EMPIRE (line 1) + VOLLEYBALL (line 2) */}
         <div
-          className="mt-3 text-white text-[38px] leading-[1.05] tracking-[0.15em] text-center animate-title-rise"
-          style={{ fontFamily: 'Belleza, sans-serif' }}
-        >
-          <div>EMPIRE</div>
-          <div>VOLLEYBALL</div>
-        </div>
+  className="mt-1 text-white text-[38px] leading-[1.05] tracking-[0.15em] text-center animate-title-rise"
+  style={{ fontFamily: 'Belleza, sans-serif' }}
+>
+  <div>EMPIRE</div>
+  <div>VOLLEYBALL</div>
+</div>
+
 
         {/* Gold shimmer WORKOUT HUB */}
         <div
