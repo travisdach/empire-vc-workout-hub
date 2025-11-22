@@ -456,8 +456,8 @@ export const MONTH_INDEX_TO_KEY: Record<number, MonthKey | null> = {
   7: null,
   8: null,
   9: null,
-  10: 'december',
-  11: null
+  10: null,
+  11: 'december',
 };
 
 // Map weekday (0=Sun … 6=Sat) to Day 1–4
