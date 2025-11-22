@@ -1,5 +1,5 @@
-// FULL UPDATED App.tsx WITH DELUXE BELLEZA SPLASH
-// ===============================================
+// FULL UPDATED App.tsx WITH CINEMATIC BELLEZA SPLASH, PARALLAX & INTRO CHIME
+// ========================================================================
 // Copy/paste into src/App.tsx
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -21,24 +21,61 @@ import GuidedWorkoutTimer from './components/GuidedWorkoutTimer';
 // CINEMATIC SPLASH SCREEN
 // ===============================
 function SplashScreen({ onDone }: { onDone: () => void }) {
+  // Spotify-safe intro chime using Web Audio (mixes with background music)
+  function playIntroChime() {
+    try {
+      const AudioCtx =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const audioCtx = new AudioCtx();
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = 660; // bright "gold" tone
+
+      const now = audioCtx.currentTime;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.15, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(now + 0.8);
+    } catch (err) {
+      // fail silently if audio context isn't available
+      console.warn('Intro chime could not play:', err);
+    }
+  }
+
   useEffect(() => {
-    const id = setTimeout(onDone, 1900);
+    playIntroChime();
+    const id = setTimeout(() => onDone(), 1900); // ~1.9s cinematic intro
     return () => clearTimeout(id);
   }, [onDone]);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950 overflow-hidden flex items-center justify-center">
+      {/* PARALLAX FLOATING CROWNS (behind everything) */}
+      <div className="parallax-wrap">
+        <div className="parallax-layer parallax-slow" />
+        <div className="parallax-layer parallax-mid" />
+        <div className="parallax-layer parallax-fast" />
+      </div>
 
-      {/* GOLD RADIAL BURST */}
-      <div className="cinematic-burst absolute inset-0"></div>
+      {/* GOLD RADIAL BURST (above parallax, below particles) */}
+      <div className="cinematic-burst absolute inset-0" />
 
       {/* GOLD PARTICLES */}
-      <div className="particle-layer pointer-events-none"></div>
+      <div className="particle-layer absolute inset-0 pointer-events-none" />
 
-      {/* CENTER CONTENT */}
+      {/* FOREGROUND CONTENT */}
       <div className="flex flex-col items-center justify-center relative z-[10]">
-
-        {/* CROWN — dramatic zoom intro + glow */}
+        {/* BIG CROWN — zoom + glow */}
         <img
           src="/icons/empire-crown.png"
           alt="Empire VC"
@@ -49,7 +86,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
           "
         />
 
-        {/* EMPIRE VOLLEYBALL — slide up & fade */}
+        {/* EMPIRE VOLLEYBALL (Belleza) */}
         <div
           className="
             mt-3 text-white text-3xl tracking-[0.20em]
@@ -73,7 +110,6 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
     </div>
   );
 }
-
 
 // ===============================
 // WORKOUT DATE LOGIC
@@ -123,7 +159,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col relative">
-
       {/* SPLASH OVERLAY */}
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
 
@@ -161,7 +196,7 @@ export default function App() {
 
               <button
                 onClick={() => setView('upcoming')}
-                className={`px-3 py-1 rounded-full border.text-xs md:text-sm ${
+                className={`px-3 py-1 rounded-full border text-xs md:text-sm ${
                   view === 'upcoming'
                     ? 'border-amber-300 bg-amber-300/10 text-amber-200'
                     : 'border-slate-700 hover:border-amber-300/70'
