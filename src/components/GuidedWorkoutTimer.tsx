@@ -150,12 +150,23 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   const beepRef = useRef<HTMLAudioElement | null>(null);
   const completeRef = useRef<HTMLAudioElement | null>(null);
 
+  // Wake lock (prevent screen sleep)
+  const wakeLockRef = useRef<any>(null);
+
   // Workout data
   const totalSets = workout.repeatSets;
   const exercises = workout.exercises;
   const currentExercise = exercises[currentExerciseIndex];
   const currentExerciseName = currentExercise?.name ?? "";
   const breakSeconds = 20;
+
+  // Next exercise name for REST display
+  const nextExerciseName =
+    exercises.length === 0
+      ? ""
+      : currentExerciseIndex === exercises.length - 1
+      ? exercises[0].name
+      : exercises[currentExerciseIndex + 1].name;
 
   // Responsive
   const { h } = useScreenSize();
@@ -188,6 +199,49 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     document.addEventListener("click", unlock, { once: true });
     document.addEventListener("touchstart", unlock, { once: true });
   }, []);
+
+  /* ============================================================
+     SCREEN WAKE LOCK (prevent dim/sleep while running fullscreen)
+  ============================================================ */
+  useEffect(() => {
+    if (typeof navigator === "undefined" || typeof document === "undefined") {
+      return;
+    }
+
+    const requestWakeLock = async () => {
+      try {
+        // Only request if feature exists and workout is active in fullscreen
+        if (!("wakeLock" in navigator) || !running || !fullscreen) return;
+        // @ts-ignore
+        wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+      } catch (err) {
+        console.log("WakeLock error:", err);
+      }
+    };
+
+    // Initial request
+    requestWakeLock();
+
+    // Re-request on visibility change (e.g., user comes back to the tab)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && running && fullscreen) {
+        requestWakeLock();
+      } else if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+  }, [running, fullscreen]);
 
   /* ============================================================
      MAIN TIMER
@@ -463,6 +517,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
                     type="checkbox"
                     checked={beepsEnabled}
                     className="accent-amber-400"
+                    readOnly
                   />
                   Beeps
                 </label>
@@ -495,7 +550,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
             {/* TITLE */}
             <div className="text-3xl font-bold text-center">
-              {phase === "complete" ? "Workout Complete!" : currentExerciseName}
+              {phase === "complete"
+                ? "Workout Complete!"
+                : phase === "rest"
+                ? `Next: ${nextExerciseName}`
+                : currentExerciseName}
             </div>
 
             {/* TIMER RING */}
