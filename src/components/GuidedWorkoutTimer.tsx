@@ -321,7 +321,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
           {/* Main content */}
           <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 gap-6">
             {/* Exercise image */}
-            <div className="w-full max-w-md aspect-[4/3] rounded-3xl overflow-hidden border border-slate-700 bg-slate-900">
+            <div className="w-full max-w-md aspect-square rounded-3xl overflow-hidden border border-slate-700 bg-slate-900">
               {imgSrc ? (
                 <img
                   src={imgSrc}
