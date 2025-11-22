@@ -1,3 +1,4 @@
+// trigger rebuild
 // src/components/GuidedWorkoutTimer.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import type { WorkoutDay } from '../data/workouts';
