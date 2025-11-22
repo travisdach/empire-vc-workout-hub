@@ -1,5 +1,5 @@
-// FULL UPDATED App.tsx WITH CINEMATIC BELLEZA SPLASH, PARALLAX & INTRO CHIME
-// ========================================================================
+// FULL UPDATED App.tsx WITH CINEMATIC SPLASH, PARALLAX & INTRO CHIME
+// =================================================================
 // Copy/paste into src/App.tsx
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -46,9 +46,8 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 
       osc.start();
       osc.stop(now + 0.8);
-    } catch (err) {
+    } catch {
       // fail silently if audio context isn't available
-      console.warn('Intro chime could not play:', err);
     }
   }
 
@@ -60,18 +59,21 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950 overflow-hidden flex items-center justify-center">
-      {/* PARALLAX FLOATING CROWNS (behind everything) */}
-      <div className="parallax-wrap">
-        <div className="parallax-layer parallax-slow" />
-        <div className="parallax-layer parallax-mid" />
-        <div className="parallax-layer parallax-fast" />
+      {/* BACKGROUND FX CONTAINER (iOS-safe) */}
+      <div className="cinematic-container">
+        {/* PARALLAX FLOATING CROWNS (behind everything) */}
+        <div className="parallax-wrap">
+          <div className="parallax-layer parallax-slow" />
+          <div className="parallax-layer parallax-mid" />
+          <div className="parallax-layer parallax-fast" />
+        </div>
+
+        {/* GOLD BURST USING PNG (prevents iOS gradient distortion) */}
+        <div className="gold-burst" />
+
+        {/* GOLD PARTICLES */}
+        <div className="particle-layer" />
       </div>
-
-      {/* GOLD RADIAL BURST (above parallax, below particles) */}
-      <div className="cinematic-burst absolute inset-0" />
-
-      {/* GOLD PARTICLES */}
-      <div className="particle-layer absolute inset-0 pointer-events-none" />
 
       {/* FOREGROUND CONTENT */}
       <div className="flex flex-col items-center justify-center relative z-[10]">
