@@ -1,5 +1,5 @@
-// FULL UPDATED App.tsx WITH UNIVERSAL SPLASH SCREEN
-// =================================================
+// FULL UPDATED App.tsx WITH DELUXE BELLEZA SPLASH
+// ===============================================
 // Copy/paste into src/App.tsx
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -18,22 +18,46 @@ import BRAND_GOLD_IMG from '/icons/empire-crown.png';
 import GuidedWorkoutTimer from './components/GuidedWorkoutTimer';
 
 // ===============================
-// UNIVERSAL SPLASH SCREEN (WORKS ON iOS CHROME + SAFARI)
+// DELUXE BELLEZA SPLASH SCREEN
 // ===============================
 function SplashScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
-    const id = setTimeout(() => onDone(), 1200);
+    const id = setTimeout(() => onDone(), 2000); //slightly longer for effect
     return () => clearTimeout(id);
   }, [onDone]);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center">
+
+      {/* BIGGER CROWN + FADE-SCALE + GLOW */}
       <img
         src="/icons/empire-crown.png"
         alt="Empire VC"
-        className="w-28 h-28 animate-fade-in"
+        className="
+          w-40 h-40 object-contain 
+          animate-splash-pop 
+          splash-crown-glow
+        "
       />
-      <div className="mt-3 text-amber-300 tracking-[0.25em] text-xs uppercase">
+
+      {/* EMPIRE VOLLEYBALL (Belleza Font) */}
+      <div
+        className="
+          mt-4 text-white text-2xl tracking-[0.20em] 
+          animate-splash-pop-delayed
+        "
+        style={{ fontFamily: 'Belleza, sans-serif' }}
+      >
+        EMPIRE VOLLEYBALL
+      </div>
+
+      {/* WORKOUT HUB GOLD SHIMMER */}
+      <div
+        className="
+          mt-1 text-sm tracking-[0.30em] text-amber-300
+          gold-shimmer animate-splash-pop-delayed2
+        "
+      >
         WORKOUT HUB
       </div>
     </div>
@@ -70,8 +94,6 @@ type ViewMode = 'today' | 'upcoming' | 'calendar' | 'coach';
 export default function App() {
   const [view, setView] = useState<ViewMode>('today');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-
-  // Splash screen
   const [showSplash, setShowSplash] = useState(true);
 
   const todayWorkout = useMemo(() => getWorkoutForDate(selectedDate), [selectedDate]);
@@ -91,14 +113,10 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col relative">
 
-      {/* ========================= */}
-      {/* UNIVERSAL SPLASH OVERLAY */}
-      {/* ========================= */}
+      {/* SPLASH OVERLAY */}
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
 
-      {/* ================================= */}
-      {/* CONTENT AREA (FADE IN AFTER SPLASH) */}
-      {/* ================================= */}
+      {/* CONTENT (FADE IN AFTER SPLASH) */}
       <div
         className={`transition-opacity duration-500 ${
           showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
