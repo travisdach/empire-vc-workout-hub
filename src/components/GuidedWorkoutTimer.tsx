@@ -9,7 +9,7 @@ interface GuidedWorkoutTimerProps {
   workout: WorkoutDay;
 }
 
-// HAPTIC helper
+// Haptic helper
 function vibrate(pattern: number | number[]) {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     navigator.vibrate(pattern);
@@ -44,13 +44,13 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   const currentExercise = exercises[currentExerciseIndex];
   const currentExerciseName = currentExercise?.name ?? '';
 
-  // REST image mapping — uses /public/images/exercises/rest.png
+  // Rest image path
   const imgSrc =
     phase === 'rest'
       ? '/images/exercises/rest.png'
       : EXERCISE_IMAGES[currentExerciseName] ?? '/images/exercises/default.png';
 
-  // PRELOAD AUDIO
+  // Preload audio
   useEffect(() => {
     beepRef.current = new Audio('/sounds/beep.wav');
     alarmRef.current = new Audio('/sounds/alarm.wav');
@@ -64,7 +64,6 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
         a.pause();
         a.currentTime = 0;
       });
-
       document.removeEventListener('click', unlock);
       document.removeEventListener('touchstart', unlock);
     };
@@ -73,7 +72,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     document.addEventListener('touchstart', unlock, { once: true });
   }, []);
 
-  // MAIN COUNTDOWN
+  // Main countdown
   useEffect(() => {
     if (!running) return;
     if (phase === 'idle' || phase === 'complete') return;
@@ -86,11 +85,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     return () => clearInterval(id);
   }, [running, phase, remaining]);
 
-  // TRANSITIONS + 3-SECOND COUNTDOWN / EFFECTS
+  // Transitions + 3-second countdown effects
   useEffect(() => {
     if (!running) return;
 
-    // Last 3 seconds: beep, vibrate, pulse ring, show countdown number
+    // Last 3 seconds → beep + pulse + countdown number
     if (remaining > 0 && remaining <= 3 && (phase === 'work' || phase === 'rest')) {
       beepRef.current?.play().catch(() => {});
       vibrate(50);
@@ -104,17 +103,18 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
     if (remaining !== 0) return;
 
-    // ——— WORK PHASE ENDED ———
+    // ================================
+    //   WORK PHASE HAS JUST ENDED
+    // ================================
     if (phase === 'work') {
-      alarmRef.current?.play().catch(() => {});
-      vibrate([150, 80, 150]);
-
       const isLastExercise = currentExerciseIndex === exercises.length - 1;
       const isLastSet = currentSet === totalSets - 1;
 
+      // ⭐ FULL WORKOUT COMPLETE (ONLY play complete sound)
       if (isLastExercise && isLastSet) {
         setRunning(false);
         setPhase('complete');
+
         completeRef.current?.play().catch(() => {});
         vibrate([200, 100, 200, 100, 300]);
 
@@ -123,7 +123,10 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
         return;
       }
 
-      // Go to REST
+      // ⭐ NOT complete → enter rest (play alarm)
+      alarmRef.current?.play().catch(() => {});
+      vibrate([150, 80, 150]);
+
       setPhase('rest');
       setPhaseTotal(breakSeconds);
       setRemaining(breakSeconds);
@@ -131,7 +134,9 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       return;
     }
 
-    // ——— REST PHASE ENDED ———
+    // ================================
+    //   REST PHASE HAS JUST ENDED
+    // ================================
     if (phase === 'rest') {
       // GO flash
       setFlashGo(true);
@@ -174,7 +179,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     breakSeconds
   ]);
 
-  // CONTROLS
+  // Controls
   function handleStart() {
     if (!exercises.length) return;
 
@@ -212,14 +217,13 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setRunning(false);
   }
 
-  // TIME FORMAT
-  const mins = Math.floor(remaining / 60);
-  const secs = remaining % 60;
+  // TIMER format: plain seconds (40 → 39 → …)
+  const plainSeconds = remaining;
 
   const phaseLabel =
     phase === 'idle' ? 'Ready' : phase === 'work' ? 'Work' : phase === 'rest' ? 'Rest' : 'Complete';
 
-  // PROGRESS CIRCLE
+  // Ring animation
   const radius = 70;
   const circumference = 2 * Math.PI * radius;
   const progress = remaining > 0 ? 1 - remaining / (phaseTotal || 1) : 1;
@@ -251,17 +255,15 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
             phase === 'rest' ? 'rest-glow' : ''
           }`}
         >
-          {/* CONFETTI ON COMPLETE */}
+          {/* CONFETTI */}
           {showConfetti && <div className="confetti" />}
 
-          {/* COUNTDOWN NUMBERS 3-2-1 */}
+          {/* 3-2-1 COUNTDOWN */}
           {countdownNumber !== null && (
-            <div className="countdown-pop">
-              {countdownNumber}
-            </div>
+            <div className="countdown-pop">{countdownNumber}</div>
           )}
 
-          {/* Top Bar */}
+          {/* TOP BAR */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
             <div>
               <div className="text-xs uppercase tracking-[0.25em] text-slate-400">
@@ -282,17 +284,17 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
           {/* MAIN CONTENT */}
           <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 gap-6">
-            {/* EXERCISE IMAGE W/ CROSSFADE */}
+            {/* IMAGE FRAME (rounded, contain) */}
             <div className="w-full max-w-md aspect-square rounded-3xl overflow-hidden border border-slate-700 bg-slate-900">
               <img
                 key={fadeKey}
                 src={imgSrc}
                 alt={currentExerciseName || 'Exercise'}
-                className="fade-image visible w-full h-full object-contain p-4"
+                className="fade-image visible w-full h-full object-contain rounded-3xl"
               />
             </div>
 
-            {/* TIMER + LABELS */}
+            {/* TIMER */}
             <div className="flex flex-col items-center gap-4">
               <div className="text-xs uppercase tracking-[0.25em] text-slate-400">{phaseLabel}</div>
 
@@ -300,7 +302,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
                 {phase === 'complete' ? 'Workout complete!' : currentExerciseName}
               </div>
 
-              {/* PROGRESS CIRCLE */}
+              {/* CIRCLE TIMER */}
               <div className={`relative w-44 h-44 md:w-52 md:h-52 ${pulseRing ? 'timer-pulse' : ''}`}>
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
                   <circle
@@ -325,17 +327,9 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
                   />
                 </svg>
 
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-4xl md:text-5xl font-mono">
-                    {mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-1">
-                    {phase === 'rest'
-                      ? 'Rest before next exercise'
-                      : phase === 'work'
-                      ? 'Work time'
-                      : ''}
-                  </div>
+                {/* TIMER COUNT (plain seconds) */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-5xl font-mono">{plainSeconds}</div>
                 </div>
               </div>
             </div>
