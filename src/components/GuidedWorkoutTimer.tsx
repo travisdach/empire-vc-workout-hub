@@ -4,6 +4,7 @@ import type { WorkoutDay } from "../data/workouts";
 import { EXERCISE_IMAGES } from "../data/exerciseImages";
 
 type Phase = "idle" | "work" | "rest" | "complete";
+type CoachCue = "getReady" | "go" | "rest" | "next" | "complete";
 
 interface GuidedWorkoutTimerProps {
   workout: WorkoutDay;
@@ -19,88 +20,20 @@ function vibrate(pattern: number | number[]) {
 }
 
 /* ============================================================
-   COACH PHRASES (Variation Pool)
+   CUSTOM COACH AUDIO (female MP3s you provide)
+   Place these files (female voice) in /public/sounds/coach/
+   - get-ready-1.mp3   ("Get ready. Focus in.")
+   - go-1.mp3          ("Go! Push it!")
+   - rest-1.mp3        ("Rest. Breathe.")
+   - next-1.mp3        ("Next move coming up.")
+   - complete-1.mp3    ("Amazing work, workout complete!")
 ============================================================ */
-const coachPhrases = {
-  getReady: [
-    "Get ready. Focus in.",
-    "Get set. Deep breath.",
-    "Dial in. Get prepared.",
-    "Stay loose. Starting soon.",
-    "Get mentally ready."
-  ],
-  go: [
-    "Go! Push it!",
-    "Go! Stay strong!",
-    "Let’s move! Your best pace!",
-    "Go! Power through it!",
-    "Go! You’ve got this!"
-  ],
-  next: [
-    "Next up: {x}. You’re doing awesome.",
-    "Coming up: {x}. Stay locked in.",
-    "Get ready for {x}. Deep breath.",
-    "Next exercise: {x}. Crush this one.",
-    "Prepare for {x}. Keep the momentum."
-  ],
-  rest: [
-    "Rest. Breathe.",
-    "Rest time. Shake it out.",
-    "Nice work. Rest now.",
-    "Catch your breath.",
-    "Rest up. Strong work!"
-  ],
-  complete: [
-    "Amazing work! Workout complete!",
-    "Great job! That’s a wrap!",
-    "You crushed it! Workout finished!",
-    "Done! Awesome effort today!",
-    "Workout complete. Be proud!"
-  ]
-};
-
-/* ============================================================
-   SPEECH ENGINE (Natural cadence)
-============================================================ */
-function baseSpeak(text: string) {
-  if (typeof window === "undefined") return;
-
-  const utter = new SpeechSynthesisUtterance(text);
-  const voices = window.speechSynthesis.getVoices();
-
-  // Prefer natural female coach voices
-  const preferred = voices.find((v) =>
-    /(samantha|olivia|serena|allison|karen|google uk english female|google us english|female|woman)/i
-      .test(v.name + " " + v.voiceURI)
-  );
-
-  if (preferred) utter.voice = preferred;
-
-  utter.pitch = 1.03;
-  utter.rate = 0.93;
-  utter.volume = 1;
-
-  // natural pauses
-  utter.text = text.replace(/,/g, ", ").replace(/\./g, ". ");
-
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utter);
-}
-
-/* ============================================================
-   SAY HELPERS (Random phrase selection)
-============================================================ */
-const pick = (key: string, arg?: string): string => {
-  const list = coachPhrases[key as keyof typeof coachPhrases];
-  if (!list) return key;
-  let phrase = list[Math.floor(Math.random() * list.length)];
-  if (arg) phrase = phrase.replace("{x}", arg);
-  return phrase;
-};
-
-const sayCoach = (enabled: boolean, key: string, arg?: string) => {
-  if (!enabled) return;
-  baseSpeak(pick(key, arg));
+const COACH_AUDIO_SOURCES: Record<CoachCue, string[]> = {
+  getReady: ["/sounds/coach/get-ready-1.mp3"],
+  go: ["/sounds/coach/go-1.mp3"],
+  rest: ["/sounds/coach/rest-1.mp3"],
+  next: ["/sounds/coach/next-1.mp3"],
+  complete: ["/sounds/coach/complete-1.mp3"]
 };
 
 /* ============================================================
@@ -136,7 +69,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
   // Settings
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [beepsEnabled] = useState(true);
+  const [beepsEnabled] = useState(true); // still always on for now
   const [showSettings, setShowSettings] = useState(false);
 
   // Visuals
@@ -146,9 +79,12 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // Audio (only beep + complete)
+  // Audio
   const beepRef = useRef<HTMLAudioElement | null>(null);
   const completeRef = useRef<HTMLAudioElement | null>(null);
+  const coachAudioRef = useRef<Record<CoachCue, HTMLAudioElement[]>>(
+    {} as Record<CoachCue, HTMLAudioElement[]>
+  );
 
   // Wake lock (prevent screen sleep)
   const wakeLockRef = useRef<any>(null);
@@ -178,12 +114,21 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       : EXERCISE_IMAGES[currentExerciseName] ?? "/images/exercises/default.png";
 
   /* ============================================================
-     PRELOAD AUDIO (Beep + Complete)
+     PRELOAD AUDIO (beep + complete + coach clips)
   ============================================================ */
   useEffect(() => {
+    // simple beep + complete
     beepRef.current = new Audio("/sounds/beep.wav");
     completeRef.current = new Audio("/sounds/complete.wav");
 
+    // coach clips
+    const map: Record<CoachCue, HTMLAudioElement[]> = {} as any;
+    (Object.keys(COACH_AUDIO_SOURCES) as CoachCue[]).forEach((key) => {
+      map[key] = COACH_AUDIO_SOURCES[key].map((src) => new Audio(src));
+    });
+    coachAudioRef.current = map;
+
+    // unlock beep/complete on first user interaction (quietly)
     const unlock = () => {
       [beepRef.current, completeRef.current].forEach((a) => {
         if (!a) return;
@@ -201,7 +146,37 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   }, []);
 
   /* ============================================================
-     SCREEN WAKE LOCK (prevent dim/sleep while running fullscreen)
+     HELPER: play beep (iOS-safe: no clone, reset currentTime)
+  ============================================================ */
+  const playBeep = () => {
+    if (!beepsEnabled || !beepRef.current) return;
+    const a = beepRef.current;
+    try {
+      a.currentTime = 0;
+      a.play().catch(() => {});
+    } catch {
+      // ignore
+    }
+  };
+
+  /* ============================================================
+     HELPER: play coach clip (female mp3)
+  ============================================================ */
+  const playCoach = (cue: CoachCue) => {
+    if (!voiceEnabled) return;
+    const list = coachAudioRef.current[cue];
+    if (!list || list.length === 0) return;
+    const audio = list[Math.floor(Math.random() * list.length)];
+    try {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    } catch {
+      // ignore
+    }
+  };
+
+  /* ============================================================
+     SCREEN WAKE LOCK
   ============================================================ */
   useEffect(() => {
     if (typeof navigator === "undefined" || typeof document === "undefined") {
@@ -210,7 +185,6 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
     const requestWakeLock = async () => {
       try {
-        // Only request if feature exists and workout is active in fullscreen
         if (!("wakeLock" in navigator) || !running || !fullscreen) return;
         // @ts-ignore
         wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
@@ -219,10 +193,8 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       }
     };
 
-    // Initial request
     requestWakeLock();
 
-    // Re-request on visibility change (e.g., user comes back to the tab)
     const handleVisibility = () => {
       if (document.visibilityState === "visible" && running && fullscreen) {
         requestWakeLock();
@@ -264,8 +236,9 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   useEffect(() => {
     if (!running) return;
 
-    // Visual only 3–2–1 before transitions
+    // 3–2–1 near phase end (with beep)
     if (!preStart && remaining > 0 && remaining <= 3) {
+      playBeep();
       vibrate(50);
       setPulseRing(true);
       setTimeout(() => setPulseRing(false), 180);
@@ -292,7 +265,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
         }
 
         vibrate([200, 100, 200]);
-        sayCoach(voiceEnabled, "complete");
+        playCoach("complete");
 
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 2000);
@@ -302,11 +275,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       // Enter rest
       vibrate([150, 80, 150]);
 
-      const nextName =
-        lastExercise ? exercises[0].name : exercises[currentExerciseIndex + 1].name;
-
-      if (lastExercise) sayCoach(voiceEnabled, "rest");
-      else sayCoach(voiceEnabled, "next", nextName);
+      playCoach(lastExercise ? "rest" : "next");
 
       setPhase("rest");
       setPhaseTotal(breakSeconds);
@@ -331,14 +300,13 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       setCurrentExerciseIndex(nextIndex);
 
       const nextDur = exercises[nextIndex].workSeconds;
-      const nextName = exercises[nextIndex].name;
 
       setPhase("work");
       setPhaseTotal(nextDur);
       setRemaining(nextDur);
       setFadeKey((k) => k + 1);
 
-      sayCoach(voiceEnabled, "go");
+      playCoach("go");
       return;
     }
   }, [
@@ -349,8 +317,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     currentExerciseIndex,
     currentSet,
     exercises,
-    totalSets,
-    voiceEnabled
+    totalSets
   ]);
 
   /* ============================================================
@@ -369,34 +336,31 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setRunning(false);
     setPreStart(true);
 
-    sayCoach(voiceEnabled, "getReady");
+    // First coach line is within user gesture → allowed on iOS
+    playCoach("getReady");
 
     let t = 0;
     const step = 1000;
 
-    const doBeep = () => {
-      if (!beepsEnabled || !beepRef.current) return;
-      const clone = beepRef.current.cloneNode(true) as HTMLAudioElement;
-      clone.play().catch(() => {});
-      vibrate(50);
-    };
-
     // 3
     setTimeout(() => {
       setCountdownNumber(3);
-      doBeep();
+      playBeep();
+      vibrate(50);
     }, (t += step));
 
     // 2
     setTimeout(() => {
       setCountdownNumber(2);
-      doBeep();
+      playBeep();
+      vibrate(50);
     }, (t += step));
 
     // 1
     setTimeout(() => {
       setCountdownNumber(1);
-      doBeep();
+      playBeep();
+      vibrate(50);
     }, (t += step));
 
     // GO
@@ -404,7 +368,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       setCountdownNumber(null);
       setPreStart(false);
 
-      sayCoach(voiceEnabled, "go");
+      playCoach("go");
       vibrate([100, 40, 100]);
 
       setPhase("work");
@@ -475,7 +439,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
                 Set {currentSet + 1} / {totalSets}
               </div>
 
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowSettings((s) => !s)}
                   className="px-3 py-1 rounded-full border border-slate-600 text-xs hover:border-amber-300/80"
@@ -516,8 +480,8 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
                   <input
                     type="checkbox"
                     checked={beepsEnabled}
-                    className="accent-amber-400"
                     readOnly
+                    className="accent-amber-400"
                   />
                   Beeps
                 </label>
@@ -548,7 +512,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
               />
             </div>
 
-            {/* TITLE */}
+            {/* TITLE – CURRENT vs NEXT ON REST */}
             <div className="text-3xl font-bold text-center">
               {phase === "complete"
                 ? "Workout Complete!"
