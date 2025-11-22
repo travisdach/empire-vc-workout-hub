@@ -18,51 +18,62 @@ import BRAND_GOLD_IMG from '/icons/empire-crown.png';
 import GuidedWorkoutTimer from './components/GuidedWorkoutTimer';
 
 // ===============================
-// DELUXE BELLEZA SPLASH SCREEN
+// CINEMATIC SPLASH SCREEN
 // ===============================
 function SplashScreen({ onDone }: { onDone: () => void }) {
   useEffect(() => {
-    const id = setTimeout(() => onDone(), 2000); //slightly longer for effect
+    const id = setTimeout(onDone, 1900);
     return () => clearTimeout(id);
   }, [onDone]);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center">
+    <div className="fixed inset-0 z-[9999] bg-slate-950 overflow-hidden flex items-center justify-center">
 
-      {/* BIGGER CROWN + FADE-SCALE + GLOW */}
-      <img
-        src="/icons/empire-crown.png"
-        alt="Empire VC"
-        className="
-          w-40 h-40 object-contain 
-          animate-splash-pop 
-          splash-crown-glow
-        "
-      />
+      {/* GOLD RADIAL BURST */}
+      <div className="cinematic-burst absolute inset-0"></div>
 
-      {/* EMPIRE VOLLEYBALL (Belleza Font) */}
-      <div
-        className="
-          mt-4 text-white text-2xl tracking-[0.20em] 
-          animate-splash-pop-delayed
-        "
-        style={{ fontFamily: 'Belleza, sans-serif' }}
-      >
-        EMPIRE VOLLEYBALL
-      </div>
+      {/* GOLD PARTICLES */}
+      <div className="particle-layer pointer-events-none"></div>
 
-      {/* WORKOUT HUB GOLD SHIMMER */}
-      <div
-        className="
-          mt-1 text-sm tracking-[0.30em] text-amber-300
-          gold-shimmer animate-splash-pop-delayed2
-        "
-      >
-        WORKOUT HUB
+      {/* CENTER CONTENT */}
+      <div className="flex flex-col items-center justify-center relative z-[10]">
+
+        {/* CROWN — dramatic zoom intro + glow */}
+        <img
+          src="/icons/empire-crown.png"
+          alt="Empire VC"
+          className="
+            w-44 h-44 object-contain
+            animate-crown-zoom
+            cinematic-crown-glow
+          "
+        />
+
+        {/* EMPIRE VOLLEYBALL — slide up & fade */}
+        <div
+          className="
+            mt-3 text-white text-3xl tracking-[0.20em]
+            animate-title-rise
+          "
+          style={{ fontFamily: 'Belleza, sans-serif' }}
+        >
+          EMPIRE VOLLEYBALL
+        </div>
+
+        {/* WORKOUT HUB — gold shimmer */}
+        <div
+          className="
+            mt-1 text-sm tracking-[0.30em] text-amber-300
+            gold-shimmer animate-title-rise-delay
+          "
+        >
+          WORKOUT HUB
+        </div>
       </div>
     </div>
   );
 }
+
 
 // ===============================
 // WORKOUT DATE LOGIC
