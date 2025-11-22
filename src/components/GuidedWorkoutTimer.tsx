@@ -132,7 +132,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     // 3…2…1 POP-IN (for normal phase transitions; not preStart)
     if (!preStart && remaining > 0 && remaining <= 3) {
       if (beepsEnabled) {
-        beepRef.current?.play().catch(() => {});
+        const beep = beepRef.current;
+        if (beep) {
+          beep.currentTime = 0; // ensure beep is audible, not cut off
+          beep.play().catch(() => {});
+        }
       }
       vibrate(50);
 
@@ -155,7 +159,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
         setRunning(false);
         setPhase("complete");
 
-        completeRef.current?.play().catch(() => {});
+        const complete = completeRef.current;
+        if (complete) {
+          complete.currentTime = 0;
+          complete.play().catch(() => {});
+        }
         vibrate([200, 100, 200, 100, 300]);
         say("Workout complete!");
 
@@ -165,7 +173,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       }
 
       // Enter REST
-      alarmRef.current?.play().catch(() => {});
+      const alarm = alarmRef.current;
+      if (alarm) {
+        alarm.currentTime = 0;
+        alarm.play().catch(() => {});
+      }
       vibrate([150, 80, 150]);
 
       // ANNOUNCE NEXT EXERCISE OR NEXT SET
@@ -192,7 +204,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       setFlashGo(true);
       setTimeout(() => setFlashGo(false), 130);
 
-      goRef.current?.play().catch(() => {});
+      const go = goRef.current;
+      if (go) {
+        go.currentTime = 0;
+        go.play().catch(() => {});
+      }
       vibrate([120, 40, 120]);
 
       const isLastExercise = currentExerciseIndex === exercises.length - 1;
@@ -219,9 +235,9 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       setRemaining(nextDur);
       setFadeKey((k) => k + 1);
 
-      // Voice: Go + Begin {exercise}
+      // Voice: Go (NO "Begin ..." call now)
       say("Go!");
-      say(`Begin ${nextName}`);
+      // removed: say(`Begin ${nextName}`);
     }
   }, [
     running,
@@ -236,8 +252,6 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     beepsEnabled,
     say
   ]);
-
-  // CONTROLS
 
   // Start with a pre-start 3–2–1–GO before the first work phase
   const handleStart = () => {
@@ -263,7 +277,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setTimeout(() => {
       setCountdownNumber(3);
       if (beepsEnabled) {
-        beepRef.current?.play().catch(() => {});
+        const beep = beepRef.current;
+        if (beep) {
+          beep.currentTime = 0;
+          beep.play().catch(() => {});
+        }
       }
       vibrate(50);
     }, (t0 += stepMs));
@@ -272,7 +290,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setTimeout(() => {
       setCountdownNumber(2);
       if (beepsEnabled) {
-        beepRef.current?.play().catch(() => {});
+        const beep = beepRef.current;
+        if (beep) {
+          beep.currentTime = 0;
+          beep.play().catch(() => {});
+        }
       }
       vibrate(50);
     }, (t0 += stepMs));
@@ -281,7 +303,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setTimeout(() => {
       setCountdownNumber(1);
       if (beepsEnabled) {
-        beepRef.current?.play().catch(() => {});
+        const beep = beepRef.current;
+        if (beep) {
+          beep.currentTime = 0;
+          beep.play().catch(() => {});
+        }
       }
       vibrate(50);
     }, (t0 += stepMs));
@@ -291,8 +317,12 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       setCountdownNumber(null);
       setPreStart(false);
       say("Go!");
-      say(`Begin ${exercises[0].name}`);
-      goRef.current?.play().catch(() => {});
+      // removed: say(`Begin ${exercises[0].name}`);
+      const go = goRef.current;
+      if (go) {
+        go.currentTime = 0;
+        go.play().catch(() => {});
+      }
       vibrate([100, 40, 100]);
 
       setPhase("work");
@@ -309,14 +339,14 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setCountdownNumber(null);
   };
 
-  // TIMER NUMBER
+  // TIMER NUMBER (plain seconds)
   const plainSeconds = remaining;
 
   // SMOOTH RING PROGRESS
   const radius = 70;
   const circumference = 2 * Math.PI * radius;
   const progress = remaining / (phaseTotal || 1);
-  const strokeDashoffset = circumference * (1 - (1 - progress));
+  const strokeDashoffset = circumference * progress;
 
   // MINI PROGRESS BAR
   const totalItems = totalSets * exercises.length;
@@ -330,7 +360,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
       {/* START SCREEN */}
       {!fullscreen && (
-        <div className="flex flex-col.items-center justify-center py-10 text-white gap-4">
+        <div className="flex flex-col items-center justify-center py-10 text-white gap-4">
           <div className="text-xl font-bold">Empire VC Workout Hub</div>
 
           <button
@@ -465,7 +495,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
               {/* COUNTDOWN (pre-start + transitions) */}
               {countdownNumber !== null && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="text-7xl font-extrabold text-amber-400 animate-pop">
+                  <div className="text-7xl font-extrabold text-amber-400.animate-pop">
                     {countdownNumber}
                   </div>
                 </div>
@@ -479,7 +509,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
               )}
             </div>
 
-            {/* CONTROLS — PAUSE BUTTON LARGER & SHIFTED UP */}
+            {/* CONTROLS — PAUSE BUTTON */}
             <div className="flex gap-3 mt-1 mb-4">
               <button
                 onClick={handlePause}
