@@ -3,22 +3,37 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- PWA Required -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Viewport + iPhone Safe Area -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Theme + Status Bar -->
+    <!-- Theme Color -->
     <meta name="theme-color" content="#0f172a" />
+
+    <!-- iOS PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Empire VC Workout" />
 
-    <!-- iOS Home Screen Icon -->
+    <!-- iOS App Icon -->
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
-    <!-- ============================== -->
-    <!-- iPHONE SPLASH SCREENS (Safari) -->
-    <!-- ============================== -->
+    <!-- ============================ -->
+    <!--       BELLEZA FONT           -->
+    <!-- ============================ -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Belleza&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- ============================ -->
+    <!--      iOS SPLASH SCREENS      -->
+    <!-- ============================ -->
 
     <!-- iPhone SE / 5 / 5S / 5C -->
     <link
@@ -65,12 +80,11 @@
              and (orientation: portrait)"
     />
 
-    <!-- iPhone 12 Pro Max / 13 Pro Max / 14 Plus / 15 Plus -->
+    <!-- iPhone 12 Pro Max / 13 Pro Max / 14 Plus -->
     <link
       rel="apple-touch-startup-image"
       href="/splash/splash-1284x2778.png"
       media="(device-width: 428px) and (device-height: 926px)
-             and (-webkit-device-pixel-ratio: 3)
              and (orientation: portrait)"
     />
 
@@ -83,19 +97,16 @@
              and (orientation: portrait)"
     />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.png" />
+    <!-- Favicon fallback -->
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
 
     <title>Empire VC Workout Hub</title>
-
-    <!-- Tailwind (if using CDN version; Vite builds inject automatically) -->
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
   </head>
 
   <body>
     <div id="root"></div>
 
-    <!-- React entry -->
+    <!-- React Application Entry -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
