@@ -1,6 +1,6 @@
 import React from 'react';
 import type { WorkoutDay } from '../data/workouts';
-import { GuidedWorkoutTimer } from './GuidedWorkoutTimer';
+import GuidedWorkoutTimer from './GuidedWorkoutTimer';
 
 interface Props {
   workout: WorkoutDay;
