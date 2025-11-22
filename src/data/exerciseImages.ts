@@ -4,7 +4,7 @@
 
 export const EXERCISE_IMAGES: Record<string, string> = {
   // DECEMBER — DAY 1
-  "Squats": "/images/exercises/squat.png",
+  "Squats": "/images/exercises/squats.png",
   "Glute Bridges": "/images/exercises/glute-bridge.png",
   "Reverse Lunges": "/images/exercises/reverse-lunge.png",
   "Calf Raises": "/images/exercises/calf-raise.png",
