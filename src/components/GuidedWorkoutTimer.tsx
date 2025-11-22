@@ -16,8 +16,8 @@ function vibrate(pattern: number | number[]) {
   }
 }
 
-// SPEECH helper — female workout coach voice
-function speak(text: string) {
+// SPEECH helper — chooses a female workout-coach-style voice
+function baseSpeak(text: string) {
   if (typeof window === "undefined") return;
 
   const utter = new SpeechSynthesisUtterance(text);
@@ -50,6 +50,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   // Pre-start countdown before first exercise
   const [preStart, setPreStart] = useState(false);
 
+  // Settings
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [beepsEnabled, setBeepsEnabled] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+
   // Animations
   const [flashGo, setFlashGo] = useState(false);
   const [pulseRing, setPulseRing] = useState(false);
@@ -75,6 +80,12 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       ? "/images/exercises/rest.png"
       : EXERCISE_IMAGES[currentExerciseName] ??
         "/images/exercises/default.png";
+
+  // Local speech wrapper honoring settings
+  const say = (text: string) => {
+    if (!voiceEnabled) return;
+    baseSpeak(text);
+  };
 
   // PRELOAD AUDIO
   useEffect(() => {
@@ -118,9 +129,11 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   useEffect(() => {
     if (!running) return;
 
-    // 3…2…1 POP-IN (phase transitions; NOT pre-start)
+    // 3…2…1 POP-IN (for normal phase transitions; not preStart)
     if (!preStart && remaining > 0 && remaining <= 3) {
-      beepRef.current?.play().catch(() => {});
+      if (beepsEnabled) {
+        beepRef.current?.play().catch(() => {});
+      }
       vibrate(50);
 
       setPulseRing(true);
@@ -144,7 +157,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
         completeRef.current?.play().catch(() => {});
         vibrate([200, 100, 200, 100, 300]);
-        speak("Workout complete!");
+        say("Workout complete!");
 
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 2000);
@@ -155,16 +168,16 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       alarmRef.current?.play().catch(() => {});
       vibrate([150, 80, 150]);
 
-      // ANNOUNCE NEXT EXERCISE
-      const next =
+      // ANNOUNCE NEXT EXERCISE OR NEXT SET
+      const nextName =
         currentExerciseIndex === exercises.length - 1
           ? exercises[0].name
           : exercises[currentExerciseIndex + 1].name;
 
       if (currentExerciseIndex === exercises.length - 1) {
-        speak("Next set coming up!");
+        say("Next set coming up!");
       } else {
-        speak(`Next: ${next}`);
+        say(`Next: ${nextName}`);
       }
 
       setPhase("rest");
@@ -183,26 +196,32 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       vibrate([120, 40, 120]);
 
       const isLastExercise = currentExerciseIndex === exercises.length - 1;
+      let nextIndex = currentExerciseIndex;
+      let nextDur = 0;
+      let nextName = "";
 
       if (!isLastExercise) {
-        const next = currentExerciseIndex + 1;
-        const nextDur = exercises[next].workSeconds;
-
-        setCurrentExerciseIndex(next);
-        setPhase("work");
-        setPhaseTotal(nextDur);
-        setRemaining(nextDur);
-        setFadeKey((k) => k + 1);
+        nextIndex = currentExerciseIndex + 1;
+        nextDur = exercises[nextIndex].workSeconds;
+        nextName = exercises[nextIndex].name;
+        setCurrentExerciseIndex(nextIndex);
       } else {
-        const nextDur = exercises[0].workSeconds;
-
+        nextIndex = 0;
+        nextDur = exercises[0].workSeconds;
+        nextName = exercises[0].name;
         setCurrentSet((s) => s + 1);
         setCurrentExerciseIndex(0);
-        setPhase("work");
-        setPhaseTotal(nextDur);
-        setRemaining(nextDur);
-        setFadeKey((k) => k + 1);
       }
+
+      // Switch to WORK
+      setPhase("work");
+      setPhaseTotal(nextDur);
+      setRemaining(nextDur);
+      setFadeKey((k) => k + 1);
+
+      // Voice: Go + Begin {exercise}
+      say("Go!");
+      say(`Begin ${nextName}`);
     }
   }, [
     running,
@@ -213,7 +232,9 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     currentSet,
     exercises,
     totalSets,
-    breakSeconds
+    breakSeconds,
+    beepsEnabled,
+    say
   ]);
 
   // CONTROLS
@@ -233,30 +254,35 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setPreStart(true);
 
     // Pre-start voice & countdown
-    speak("Get ready");
+    say("Get ready");
 
-    // Manual 3-2-1 pre-start countdown (no ring yet)
     let t0 = 0;
     const stepMs = 1000;
 
-    // Show 3
+    // 3
     setTimeout(() => {
       setCountdownNumber(3);
-      beepRef.current?.play().catch(() => {});
+      if (beepsEnabled) {
+        beepRef.current?.play().catch(() => {});
+      }
       vibrate(50);
     }, (t0 += stepMs));
 
-    // Show 2
+    // 2
     setTimeout(() => {
       setCountdownNumber(2);
-      beepRef.current?.play().catch(() => {});
+      if (beepsEnabled) {
+        beepRef.current?.play().catch(() => {});
+      }
       vibrate(50);
     }, (t0 += stepMs));
 
-    // Show 1
+    // 1
     setTimeout(() => {
       setCountdownNumber(1);
-      beepRef.current?.play().catch(() => {});
+      if (beepsEnabled) {
+        beepRef.current?.play().catch(() => {});
+      }
       vibrate(50);
     }, (t0 += stepMs));
 
@@ -264,7 +290,8 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
     setTimeout(() => {
       setCountdownNumber(null);
       setPreStart(false);
-      speak("Go!");
+      say("Go!");
+      say(`Begin ${exercises[0].name}`);
       goRef.current?.play().catch(() => {});
       vibrate([100, 40, 100]);
 
@@ -274,6 +301,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
   };
 
   const handlePause = () => setRunning((r) => !r);
+
   const handleExit = () => {
     setFullscreen(false);
     setRunning(false);
@@ -302,7 +330,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
 
       {/* START SCREEN */}
       {!fullscreen && (
-        <div className="flex flex-col items-center justify-center py-10 text-white gap-4">
+        <div className="flex flex-col.items-center justify-center py-10 text-white gap-4">
           <div className="text-xl font-bold">Empire VC Workout Hub</div>
 
           <button
@@ -317,56 +345,88 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
       {/* FULLSCREEN MODE */}
       {fullscreen && (
         <div
-          className={`fixed inset-0 z-50 bg-slate-950 text-white flex flex-col transition-all duration-500 ${
+          className={`fixed inset-0 z-50 bg-slate-950 text-white flex flex-col transition-all duration-500 pb-[env(safe-area-inset-bottom)] ${
             phase === "rest" ? "rest-glow" : ""
           }`}
         >
           {/* CONFETTI */}
           {showConfetti && <div className="confetti" />}
 
-          {/* TOP BAR + MINI PROGRESS BAR */}
+          {/* TOP BAR + MINI PROGRESS BAR + SETTINGS TOGGLE */}
           <div className="px-4 py-3 border-b border-slate-800 bg-slate-900/90 relative z-20">
             <div className="flex items-center justify-between">
               <div className="text-xs uppercase tracking-[0.25em] text-slate-400">
                 Set {currentSet + 1} / {totalSets}
               </div>
 
-              <button
-                onClick={handleExit}
-                className="px-3 py-1 rounded-full border border-slate-600 text-xs hover:border-amber-300/80"
-              >
-                Exit
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowSettings((s) => !s)}
+                  className="px-3 py-1 rounded-full border border-slate-600 text-xs hover:border-amber-300/80"
+                >
+                  Settings
+                </button>
+                <button
+                  onClick={handleExit}
+                  className="px-3 py-1 rounded-full border border-slate-600 text-xs hover:border-amber-300/80"
+                >
+                  Exit
+                </button>
+              </div>
             </div>
 
+            {/* MINI PROGRESS BAR */}
             <div className="w-full h-[5px] mt-3 bg-slate-800 rounded-full overflow-hidden">
               <div
                 className="h-full bg-amber-400 transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
+
+            {/* SETTINGS PANEL */}
+            {showSettings && (
+              <div className="mt-3 flex gap-4 text-xs text-slate-200">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={voiceEnabled}
+                    onChange={(e) => setVoiceEnabled(e.target.checked)}
+                    className="accent-amber-400"
+                  />
+                  <span>Coach voice</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={beepsEnabled}
+                    onChange={(e) => setBeepsEnabled(e.target.checked)}
+                    className="accent-amber-400"
+                  />
+                  <span>Beeps</span>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* MAIN AREA */}
-          <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 gap-6 relative">
-
+          <div className="flex-1 flex flex-col items-center justify-start px-4 pt-6 pb-4 gap-6 relative">
             {/* IMAGE */}
             <div className="w-full max-w-md aspect-square rounded-3xl overflow-hidden border border-slate-700 bg-slate-900">
               <img
                 key={fadeKey}
                 src={imgSrc}
                 alt={currentExerciseName}
-                className="fade-image.visible w-full h-full object-contain rounded-3xl"
+                className="fade-image visible w-full h-full object-contain rounded-3xl"
               />
             </div>
 
             {/* TITLE */}
-            <div className="text-3xl font-bold mt-2 text-center">
+            <div className="text-3xl font-bold mt-1 text-center">
               {phase === "complete" ? "Workout Complete!" : currentExerciseName}
             </div>
 
-            {/* TIMER CIRCLE */}
-            <div className="relative w-44 h-44 md:w-52 md:h-52 flex items-center justify-center">
+            {/* TIMER CIRCLE + COUNTDOWN */}
+            <div className="relative w-44 h-44 md:w-52 md:h-52 flex items-center justify-center mt-2 mb-4">
               {/* Show ring only AFTER pre-start countdown */}
               {!preStart && (
                 <div
@@ -402,7 +462,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
                 </div>
               )}
 
-              {/* COUNTDOWN IN CENTER (pre-start + transitions) */}
+              {/* COUNTDOWN (pre-start + transitions) */}
               {countdownNumber !== null && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-7xl font-extrabold text-amber-400 animate-pop">
@@ -411,7 +471,7 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
                 </div>
               )}
 
-              {/* TIMER NUMBER (hide while countdown visible) */}
+              {/* TIMER NUMBER (hide while countdown visible or pre-start) */}
               {countdownNumber === null && !preStart && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-5xl font-mono">{plainSeconds}</div>
@@ -419,8 +479,8 @@ const GuidedWorkoutTimer: React.FC<GuidedWorkoutTimerProps> = ({ workout }) => {
               )}
             </div>
 
-            {/* CONTROLS — PAUSE BUTTON LARGER */}
-            <div className="flex gap-3 mt-2">
+            {/* CONTROLS — PAUSE BUTTON LARGER & SHIFTED UP */}
+            <div className="flex gap-3 mt-1 mb-4">
               <button
                 onClick={handlePause}
                 className="px-8 py-3 rounded-full border border-amber-300 text-base font-semibold hover:bg-amber-300/10"
