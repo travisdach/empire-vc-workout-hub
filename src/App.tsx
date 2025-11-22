@@ -1,5 +1,5 @@
-// FINAL App.tsx — Parallax Removed, Particles Removed, Soft/Fast Burst
-// ===================================================================
+// FINAL App.tsx — Parallax Removed, Particles Removed, Slower Burst, Longer Splash
+// ===============================================================================
 
 import React, { useMemo, useState, useEffect } from 'react';
 import {
@@ -17,7 +17,7 @@ import BRAND_GOLD_IMG from '/icons/empire-crown.png';
 import GuidedWorkoutTimer from './components/GuidedWorkoutTimer';
 
 // ===============================
-// SPLASH SCREEN (NO PARALLAX, NO PARTICLES)
+// CINEMATIC SPLASH SCREEN
 // ===============================
 function SplashScreen({ onDone }: { onDone: () => void }) {
   // Spotify-safe intro chime
@@ -28,6 +28,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       if (!AudioCtx) return;
 
       const ctx = new AudioCtx();
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -43,39 +44,44 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       gain.connect(ctx.destination);
 
       osc.start();
-      osc.stop(now + 0.5);
+      osc.stop(now + 0.6);
     } catch {}
   }
 
   useEffect(() => {
     playIntroChime();
-    const id = setTimeout(() => onDone(), 1600);
+    const id = setTimeout(() => onDone(), 2600); // slower & clearer splash
     return () => clearTimeout(id);
   }, [onDone]);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950 overflow-hidden flex items-center justify-center">
 
-      {/* BACKGROUND — Softened Burst Only */}
+      {/* BACKGROUND — Soft slow burst */}
       <div className="cinematic-container">
         <div className="gold-burst-soft" />
       </div>
 
       {/* FOREGROUND */}
       <div className="flex flex-col items-center justify-center relative z-[10]">
+
+        {/* Big Crown */}
         <img
           src="/icons/empire-crown.png"
           alt="Empire VC"
           className="w-44 h-44 object-contain animate-crown-zoom cinematic-crown-glow"
         />
 
+        {/* EMPIRE (line 1) + VOLLEYBALL (line 2) */}
         <div
-          className="mt-3 text-white text-3xl tracking-[0.20em] animate-title-rise"
+          className="mt-3 text-white text-[38px] leading-[1.05] tracking-[0.15em] text-center animate-title-rise"
           style={{ fontFamily: 'Belleza, sans-serif' }}
         >
-          EMPIRE VOLLEYBALL
+          <div>EMPIRE</div>
+          <div>VOLLEYBALL</div>
         </div>
 
+        {/* Gold shimmer WORKOUT HUB */}
         <div
           className="mt-1 text-sm tracking-[0.30em] text-amber-300 gold-shimmer animate-title-rise-delay"
         >
@@ -87,7 +93,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 }
 
 // ===============================
-// DATE LOGIC
+// WORKOUT DATE LOGIC
 // ===============================
 function getWorkoutForDate(d: Date): WorkoutDay | null {
   const override = findOverrideForDate(d);
@@ -133,6 +139,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col relative">
+
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
 
       <div
@@ -175,6 +182,7 @@ export default function App() {
         {/* MAIN CONTENT */}
         <main className="flex-1">
           <div className="max-w-4xl mx-auto px-4 py-4 md:py-6">
+
             {view === 'today' && (
               <section>
                 <h2 className="text-lg md:text-2xl font-semibold mb-3">
