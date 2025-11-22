@@ -28,21 +28,22 @@ body {
   z-index: 1;
 }
 
-/* ★ Softened Burst (75% weaker + faster fade-out) */
+/* ★ Slower, more visible cinematic burst */
 .gold-burst-soft {
   position: absolute;
   inset: 0;
   background-image: url('/splash/gold-burst.png');
   background-size: cover;
   background-position: center;
-  opacity: 0.25; /* MUCH softer */
-  animation: soft-burst-fade 1s ease-out forwards;
+  opacity: 0.22; /* visible but iPhone-safe */
+  animation: soft-burst-fade 2.4s ease-out forwards;
 }
 
 @keyframes soft-burst-fade {
-  0%   { opacity: 0.15; transform: scale(0.9); }
-  20%  { opacity: 0.35; transform: scale(1.05); }
-  100% { opacity: 0;    transform: scale(1.18); }
+  0%   { opacity: 0;    transform: scale(0.85); }
+  20%  { opacity: 0.30; transform: scale(1.0); }
+  55%  { opacity: 0.26; transform: scale(1.12); }
+  100% { opacity: 0;    transform: scale(1.25); }
 }
 
 /* Crown zoom */
@@ -62,7 +63,7 @@ body {
   100% { filter: drop-shadow(0 0 0 rgba(222,197,91,0)); }
 }
 .cinematic-crown-glow {
-  animation: crown-pulse 2.2s.ease-in-out infinite;
+  animation: crown-pulse 2.2s ease-in-out infinite;
 }
 
 /* Title rise */
